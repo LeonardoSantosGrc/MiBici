@@ -84,3 +84,31 @@ export PRINT_HELP_PYSCRIPT
 
 help:
 	@$(PYTHON_INTERPRETER) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
+
+
+
+#################################################################################
+# Register the project Jupyter kernel                                           #
+#################################################################################
+
+## Register the project Jupyter kernel
+.PHONY: kernel
+kernel:
+	conda run -n $(PROJECT_NAME) python -m ipykernel install \
+		--user \
+		--name $(PROJECT_NAME) \
+		--display-name "Python ($(PROJECT_NAME))"
+
+
+## Full project setup
+.PHONY: setup
+setup:
+	@if conda env list | awk '{print $$1}' | grep -qx "$(PROJECT_NAME)"; then \
+		echo ">>> Environment exists. Updating..."; \
+		$(MAKE) requirements; \
+	else \
+		echo ">>> Creating environment..."; \
+		$(MAKE) create_environment; \
+	fi
+	$(MAKE) kernel
+	@echo ">>> MiBici environment ready."

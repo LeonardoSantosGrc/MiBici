@@ -9,6 +9,7 @@ dependencies:
   - tqdm
   - ipython
   - jupyterlab
+  - ipykernel
   - matplotlib
   - notebook
   - numpy
