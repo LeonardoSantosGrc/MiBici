@@ -62,9 +62,12 @@ create_environment:
 
 
 ## Make dataset
+DATA_ARGS ?=
+
+## Download raw MiBici data
 .PHONY: data
-data: requirements
-	$(PYTHON_INTERPRETER) mibici/dataset.py
+data: 
+	conda run -n $(PROJECT_NAME) python -m mibici.dataset $(DATA_ARGS)
 
 
 #################################################################################

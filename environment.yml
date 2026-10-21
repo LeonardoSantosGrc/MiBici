@@ -19,5 +19,7 @@ dependencies:
   - pytest
   - python-dotenv
   - mkdocs
+  - requests
+  - beautifulsoup4
   - pip:
     - -e .
