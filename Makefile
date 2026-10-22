@@ -69,6 +69,13 @@ DATA_ARGS ?=
 data: 
 	conda run -n $(PROJECT_NAME) python -m mibici.dataset $(DATA_ARGS)
 
+PROFILE_ARGS ?=
+
+## Profile raw MiBici data (read-only) into reports/profiling
+.PHONY: profile
+profile:
+	conda run -n $(PROJECT_NAME) python -m mibici.profiling $(PROFILE_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

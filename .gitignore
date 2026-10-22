@@ -15,6 +15,11 @@
 !/data/processed/.gitkeep
 !/data/external/.gitkeep
 
+# Profiling: derived artifacts, regenerated with `make profile`
+/reports/profiling/station_month_counts.csv
+/reports/profiling/daily_trip_counts.csv
+/reports/profiling/nomenclature_stations.csv
+
 # Mac OS-specific storage files
 .DS_Store
 

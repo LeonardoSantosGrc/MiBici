@@ -1,0 +1,2 @@
+filename,encoding,columns,columns_match_expected,n_rows,n_unique_id,duplicated_id,duplicated_name,non_numeric_id,empty_id,empty_name,empty_latitude,empty_longitude,empty_dpcapacity,coordinates_outside_gdl,capacity_min,capacity_max,capacity_zero_or_missing,name_without_prefix
+nomenclatura_2026_09.csv,utf-8,id|name|latitude|longitude|dpcapacity,True,484,484,0,0,0,0,0,0,0,0,0,0,39,4,14
