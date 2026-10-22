@@ -50,12 +50,34 @@ No subir `.env`, credenciales, tokens ni archivos temporales.
 
 ### Notebooks
 
-- `01_inspect_mibici_links.ipynb`: inspección de la fuente oficial y validación de enlaces.
-- `02_profile_raw_data.ipynb`: diagnóstico del histórico raw. Requiere `make data` y
+#### Cómo nombrar un notebook
+
+Seguimos la convención de Cookiecutter Data Science: `FASE.NUM-iniciales-descripcion.ipynb`
+
+| Parte | Qué indica | Valores |
+|---|---|---|
+| `FASE` | Etapa del análisis | `0` exploración · `1` limpieza y features · `2` visualización · `3` modelado · `4` publicación |
+| `NUM` | Orden dentro de la fase, con dos dígitos | `01`, `02`, … |
+| `iniciales` | Responsable del notebook | p. ej. `lsg` |
+| `descripcion` | Qué hace, en inglés, minúsculas y separado con guiones | p. ej. `profile-raw-data` |
+
+Ejemplos: `0.02-lsg-profile-raw-data.ipynb`, `1.01-abc-clean-trips.ipynb`, `3.01-abc-baseline-model.ipynb`.
+
+Reglas del equipo:
+
+- Antes de crear uno, revisar el último `NUM` de esa fase para no repetirlo.
+- La lógica que se repita entre notebooks se mueve a `mibici/` y se importa (ver `mibici/profiling.py`).
+- Los notebooks se suben **con sus resultados**; cualquiera puede volver a ejecutarlos.
+- Evitar que dos personas editen el mismo notebook a la vez: los conflictos en `.ipynb` son difíciles de resolver.
+
+#### Notebooks actuales
+
+- `0.01-lsg-inspect-mibici-links.ipynb`: inspección de la fuente oficial y validación de enlaces.
+- `0.02-lsg-profile-raw-data.ipynb`: diagnóstico del histórico raw. Requiere `make data` y
   `make profile` antes de ejecutarse:
 
   ```bash
-  jupyter nbconvert --to notebook --execute --inplace notebooks/02_profile_raw_data.ipynb
+  jupyter nbconvert --to notebook --execute --inplace notebooks/0.02-lsg-profile-raw-data.ipynb
   ```
 
 ## Project Organization
@@ -74,9 +96,9 @@ No subir `.env`, credenciales, tokens ni archivos temporales.
 │
 ├── models             <- Trained and serialized models, model predictions, or model summaries
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+├── notebooks          <- Jupyter notebooks. Naming convention is PHASE.NUM, the creator's
+│                         initials, and a short `-` delimited description, e.g.
+│                         `0.02-lsg-profile-raw-data` (see "Cómo nombrar un notebook").
 │
 ├── pyproject.toml     <- Project configuration file with package metadata for 
 │                         mibici and configuration for tools like black
