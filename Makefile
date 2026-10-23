@@ -122,3 +122,20 @@ setup:
 	fi
 	$(MAKE) kernel
 	@echo ">>> MiBici environment ready."
+
+
+#################################################################################
+# Set up the MLflow structure and start the server                              #
+#################################################################################
+
+MLFLOW_DIR = $(CURDIR)/mlflow
+MLFLOW_PORT ?= 5000
+
+## Start local MLflow Tracking Server (SQLite backend + local artifacts)
+.PHONY: mlflow
+mlflow:
+	mkdir -p $(MLFLOW_DIR)/backend $(MLFLOW_DIR)/artifacts
+	conda run --no-capture-output -n $(PROJECT_NAME) mlflow server \
+		--backend-store-uri sqlite:///$(MLFLOW_DIR)/backend/mlflow.db \
+		--default-artifact-root $(MLFLOW_DIR)/artifacts \
+		--host 127.0.0.1 --port $(MLFLOW_PORT)
