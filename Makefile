@@ -76,6 +76,13 @@ PROFILE_ARGS ?=
 profile:
 	conda run -n $(PROJECT_NAME) python -m mibici.profiling $(PROFILE_ARGS)
 
+INTERIM_ARGS ?=
+
+## Build data/interim (trips + stations) from data/raw and write reports/interim
+.PHONY: interim
+interim:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.interim $(INTERIM_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

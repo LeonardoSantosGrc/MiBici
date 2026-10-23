@@ -134,7 +134,9 @@ def add_station_metadata_flags(trips: pd.DataFrame, station_ids: pd.Series) -> p
     """Flag trips whose origin or destination is missing from the station snapshot."""
     # Un set permite preguntar muy rápido si un id está en el catálogo
     known = set(station_ids.dropna())
-    # isin -> True si el id está en el catálogo; ~ lo invierte: True si NO está
-    trips["flag_origin_without_metadata"] = ~trips["origin_station_id"].isin(known)
-    trips["flag_destination_without_metadata"] = ~trips["destination_station_id"].isin(known)
+    # isin -> True si el id está en el catálogo; ~ lo invierte: True si NO está.
+    # Sobre enteros nullable, isin da "boolean"; se pasa a bool como los demás flags.
+    for role in ["origin", "destination"]:
+        is_known = trips[f"{role}_station_id"].isin(known).astype(bool)
+        trips[f"flag_{role}_without_metadata"] = ~is_known
     return trips
