@@ -5,6 +5,7 @@ duplicates -> station lifecycle -> Parquet in ``data/interim``. Small summary
 files (schema, quality counts, per-file lineage) go to ``reports/interim``.
 """
 
+import hashlib
 import json
 import shutil
 
@@ -14,7 +15,11 @@ from tqdm import tqdm
 import typer
 
 from mibici.config import INTERIM_DATA_DIR, REPORTS_DIR
+from mibici.dataset import MANIFEST_PATH
 from mibici.preparation import (
+    MAX_TRIP_SECONDS,
+    MIN_BIRTH_YEAR,
+    SHORT_TRIP_SECONDS,
     add_duration,
     add_quality_flags,
     drop_exact_duplicates,
@@ -22,7 +27,14 @@ from mibici.preparation import (
     prepare_file,
 )
 from mibici.profiling import list_raw_files
-from mibici.stations import add_station_metadata_flags, build_station_lifecycle, load_nomenclature
+from mibici.stations import (
+    INACTIVE_TAIL_MONTHS,
+    NEW_STATION_SINCE,
+    add_station_metadata_flags,
+    build_station_lifecycle,
+    load_nomenclature,
+)
+from mibici.tracking import check_tracking_server, git_info, log_dataset_run
 
 app = typer.Typer()
 
@@ -104,14 +116,50 @@ def write_trips(trips: pd.DataFrame) -> None:
     )
 
 
+def tracking_params(trip_files: pd.DataFrame, nomenclature_path) -> dict[str, object]:
+    """Rules, thresholds and inputs that define how interim_v1 was produced."""
+    return {
+        # Reglas de limpieza: qué se elimina y qué solo se marca
+        "rule_drop": "exact_duplicates",
+        "rule_flags": "duration_negative|duration_zero|short_same_station|"
+        "short_cross_station|duration_over_24h|birth_year_implausible|"
+        "origin_without_metadata|destination_without_metadata",
+        # Umbrales de los flags
+        "short_trip_seconds": SHORT_TRIP_SECONDS,
+        "max_trip_seconds": MAX_TRIP_SECONDS,
+        "min_birth_year": MIN_BIRTH_YEAR,
+        "new_station_since": str(NEW_STATION_SINCE),
+        "inactive_tail_months": INACTIVE_TAIL_MONTHS,
+        # Entradas: cuántos archivos y qué versión del manifest (su propio hash)
+        "n_trip_files": len(trip_files),
+        "nomenclature_file": nomenclature_path.name,
+        "manifest_sha256": hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest(),
+        # Formato de salida
+        "output_format": "parquet",
+        "partition_cols": "year",
+    }
+
+
 @app.command()
 def main(
     limit: int | None = typer.Option(
         None,
         help="Maximum number of trip files to process. Useful for testing.",
     ),
+    track: bool = typer.Option(
+        True,
+        help="Log this dataset version to MLflow (requires `make mlflow`).",
+    ),
 ) -> None:
     """Build data/interim from data/raw and write summary reports."""
+    # Antes de procesar: el servidor debe estar arriba y se toma el commit del código
+    # que se va a ejecutar (antes de que este mismo comando reescriba reports/interim)
+    if track:
+        check_tracking_server()
+        git = git_info()
+        if git["git_dirty"] == "true":
+            logger.warning("Uncommitted changes: the MLflow run will be tagged git_dirty=true")
+
     manifest = load_manifest()
     files = list_raw_files()
     trip_files = files[files["kind"] == "trips"]
@@ -147,6 +195,26 @@ def main(
     (INTERIM_REPORTS_DIR / "quality_summary.json").write_text(json.dumps(summary, indent=2))
     (INTERIM_REPORTS_DIR / "schema.json").write_text(json.dumps(schema, indent=2))
     file_summary(raw_rows, trips).to_csv(INTERIM_REPORTS_DIR / "file_summary.csv", index=False)
+
+    # --- Trazabilidad: una corrida de MLflow = una versión lógica del dataset ---
+    if track:
+        # Métricas = valores numéricos del resumen; el rango de fechas va como parámetro
+        metrics = {key: value for key, value in summary.items() if isinstance(value, int)}
+        params = tracking_params(trip_files, nomenclature_path)
+        params.update(
+            started_at_min=summary["started_at_min"], started_at_max=summary["started_at_max"]
+        )
+        log_dataset_run(
+            run_name=f"build_{DATASET_VERSION}",
+            tags={"pipeline_stage": "interim", "dataset_version": DATASET_VERSION, **git},
+            params=params,
+            metrics=metrics,
+            artifacts=[*sorted(INTERIM_REPORTS_DIR.iterdir()), MANIFEST_PATH],
+            datasets={
+                "interim_trips": (trips, str(TRIPS_DIR)),
+                "interim_stations": (stations, str(STATIONS_PATH)),
+            },
+        )
 
     logger.success(
         f"Interim complete: {len(trips):,} trips, {len(stations)} stations. "
