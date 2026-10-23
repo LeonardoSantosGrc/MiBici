@@ -5,11 +5,14 @@ parameters = rules and thresholds, metrics = counts, tags = stage, version and
 Git commit, artifacts = small evidence files. Heavy data is never uploaded.
 """
 
+import hashlib
 from pathlib import Path
 import subprocess
 
 from loguru import logger
 import mlflow
+from mlflow.data.dataset_source_registry import resolve_dataset_source
+from mlflow.data.meta_dataset import MetaDataset
 import pandas as pd
 import requests
 
@@ -17,6 +20,37 @@ from mibici.config import MLFLOW_TRACKING_URI, PROJ_ROOT
 
 EXPERIMENT_NAME = "mibici-datasets"
 TEAM = "tec_tc5044_04"
+
+# Filas usadas para inferir el esquema: los tipos son los mismos en toda la tabla
+SCHEMA_SAMPLE_ROWS = 1000
+
+
+def dataframe_digest(df: pd.DataFrame) -> str:
+    """Fingerprint of every row and column: changes if any value in the table changes."""
+    # hash_pandas_object da un número por fila (vectorizado: ~4 s para 39 M filas);
+    # el MD5 de todos esos números resume la tabla completa en 8 caracteres
+    row_hashes = pd.util.hash_pandas_object(df, index=False).values
+    return hashlib.md5(row_hashes.tobytes()).hexdigest()[:8]
+
+
+def describe_dataset(df: pd.DataFrame, source: str, name: str) -> MetaDataset:
+    """MLflow dataset entry (name, source, digest, schema) without uploading the data."""
+    # mlflow.data.from_pandas recorre la tabla completa para el esquema (~4 min con 39 M
+    # filas) y su digest solo usa las primeras 10,000 filas. Aquí el digest cubre todas
+    # las filas y el esquema se infiere de una muestra.
+    sample = df.head(SCHEMA_SAMPLE_ROWS).copy()
+    # MLflow no reconoce los meses (period[M]); en la muestra se describen como texto "2024-05"
+    period_columns = [
+        column for column in sample if isinstance(sample[column].dtype, pd.PeriodDtype)
+    ]
+    sample[period_columns] = sample[period_columns].astype(str)
+    schema = mlflow.models.infer_signature(sample).inputs
+    return MetaDataset(
+        source=resolve_dataset_source(source),
+        name=name,
+        digest=dataframe_digest(df),
+        schema=schema,
+    )
 
 
 def git_info() -> dict[str, str]:
@@ -59,8 +93,8 @@ def log_dataset_run(
 ) -> str:
     """Log one dataset version to MLflow and return the run id.
 
-    ``datasets`` maps a name to (DataFrame, source path); MLflow stores its schema,
-    row count and a digest (fingerprint), not the data itself.
+    ``datasets`` maps a name to (DataFrame, source path); MLflow stores its schema
+    and a digest (fingerprint), not the data itself.
     """
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT_NAME)
@@ -72,8 +106,9 @@ def log_dataset_run(
 
         # Datasets como "inputs" de la corrida: aparecen en la UI con su digest y esquema
         for name, (df, source) in datasets.items():
-            dataset = mlflow.data.from_pandas(df, source=source, name=name)
-            mlflow.log_input(dataset, context=tags.get("pipeline_stage"))
+            mlflow.log_input(
+                describe_dataset(df, source, name), context=tags.get("pipeline_stage")
+            )
 
         # Solo archivos pequeños de evidencia; nunca los datos raw ni interim
         for path in artifacts:
