@@ -9,7 +9,13 @@ from pathlib import Path
 import pandas as pd
 
 from mibici.dataset import MANIFEST_PATH
-from mibici.profiling import DATETIME_FORMATS, parse_datetimes, read_raw_trips
+from mibici.profiling import (
+    DATETIME_FORMATS,
+    detect_encoding,
+    parse_datetimes,
+    read_header,
+    read_raw_trips,
+)
 
 # Nombres canónicos de interim (raw -> interim). Las claves son los nombres que deja
 # read_raw_trips, iguales en todos los archivos sin importar su encoding.
@@ -70,8 +76,11 @@ def normalize_trips(raw: pd.DataFrame) -> pd.DataFrame:
         {
             "Viaje_Id": to_integer(raw["Viaje_Id"], "Int64"),
             "Usuario_Id": to_integer(raw["Usuario_Id"], "Int64"),
-            # Lo que no está en GENDER_VALUES queda como <NA>
-            "Genero": pd.Categorical(raw["Genero"], categories=GENDER_VALUES),
+            # Lo que no está en GENDER_VALUES queda como <NA>. where() conserva los valores
+            # que cumplen la condición y vacía el resto antes de crear la categoría.
+            "Genero": pd.Categorical(
+                raw["Genero"].where(raw["Genero"].isin(GENDER_VALUES)), categories=GENDER_VALUES
+            ),
             "Año_de_nacimiento": to_integer(raw["Año_de_nacimiento"], "Int16"),
             "Inicio_del_viaje": started_at,
             "Fin_del_viaje": ended_at,
@@ -96,9 +105,16 @@ def add_lineage(df: pd.DataFrame, source_file: str, source_sha256: str) -> pd.Da
 
 def prepare_file(path: Path, source_sha256: str) -> pd.DataFrame:
     """Read one raw trips file and return it normalised with lineage."""
+    # read_raw_trips renombra las columnas por posición: un archivo con otro orden o con
+    # otras columnas se leería en silencio con datos cruzados. Se valida antes de leer.
+    encoding = detect_encoding(path)
+    header = read_header(path, encoding=encoding)
+    if not header["header_matches_layout"]:
+        raise ValueError(f"{path.name}: unexpected trip header {header['raw_header']!r}")
+
     # Pipeline de un archivo: leer (texto) -> normalizar (tipos) -> agregar linaje.
     # path.name es solo el nombre del archivo, sin la carpeta.
-    trips = normalize_trips(read_raw_trips(path))
+    trips = normalize_trips(read_raw_trips(path, encoding=encoding))
     return add_lineage(trips, path.name, source_sha256)
 
 
