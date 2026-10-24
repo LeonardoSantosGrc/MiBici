@@ -1,0 +1,137 @@
+fecha,dia,salidas,esperado,cociente,tipo,horas_cobertura,causa,clasificacion
+2015-01-01,jueves,289,999.0,0.29,bajo,23.9,Año Nuevo,comportamiento real (calendario)
+2015-02-02,lunes,500,1050.0,0.48,bajo,17.9,Día de la Constitución (puente),comportamiento real (calendario)
+2015-03-15,domingo,258,622.0,0.41,bajo,23.6,,por explicar
+2015-03-16,lunes,158,1312.0,0.12,bajo,17.6,Natalicio de Benito Juárez (puente),comportamiento real (calendario)
+2015-04-02,jueves,651,1435.0,0.45,bajo,23.8,Jueves Santo,comportamiento real (calendario)
+2015-04-03,viernes,508,1438.0,0.35,bajo,21.5,Viernes Santo,comportamiento real (calendario)
+2015-04-04,sábado,428,883.0,0.48,bajo,23.7,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2015-05-01,viernes,609,1440.0,0.42,bajo,23.2,Día del Trabajo,comportamiento real (calendario)
+2015-09-16,miércoles,697,1570.0,0.44,bajo,23.8,Día de la Independencia,comportamiento real (calendario)
+2015-10-23,viernes,524,1650.0,0.32,bajo,23.1,,por explicar
+2015-12-24,jueves,687,1932.0,0.36,bajo,17.9,Nochebuena,comportamiento real (calendario)
+2015-12-25,viernes,279,1711.0,0.16,bajo,17.8,Navidad,comportamiento real (calendario)
+2015-12-26,sábado,583,1174.0,0.5,bajo,17.9,Vacaciones de fin de año,comportamiento real (calendario)
+2015-12-31,jueves,741,1888.0,0.39,bajo,17.9,Fin de año,comportamiento real (calendario)
+2016-01-01,viernes,351,1711.0,0.21,bajo,23.9,Año Nuevo,comportamiento real (calendario)
+2016-02-01,lunes,796,1694.0,0.47,bajo,23.2,Día de la Constitución (puente),comportamiento real (calendario)
+2016-03-24,jueves,899,1998.0,0.45,bajo,17.9,Jueves Santo,comportamiento real (calendario)
+2016-03-25,viernes,679,1952.0,0.35,bajo,17.8,Viernes Santo,comportamiento real (calendario)
+2016-08-19,viernes,3292,2123.0,1.55,alto,17.9,,por explicar
+2016-08-20,sábado,2065,1337.0,1.54,alto,17.9,,por explicar
+2016-08-25,jueves,3553,2206.0,1.61,alto,17.9,,por explicar
+2016-08-26,viernes,3595,2128.0,1.69,alto,18.0,,por explicar
+2016-08-27,sábado,2175,1394.0,1.56,alto,17.9,,por explicar
+2016-08-28,domingo,1995,1128.0,1.77,alto,17.8,,por explicar
+2016-08-29,lunes,3734,2229.0,1.68,alto,18.0,,por explicar
+2016-08-30,martes,3836,2242.0,1.71,alto,18.0,,por explicar
+2016-08-31,miércoles,4153,2214.0,1.88,alto,17.9,,por explicar
+2016-09-01,jueves,3567,2206.0,1.62,alto,18.0,,por explicar
+2016-09-02,viernes,4024,2128.0,1.89,alto,17.9,,por explicar
+2016-09-03,sábado,2461,1439.0,1.71,alto,18.0,,por explicar
+2016-09-04,domingo,2103,1162.0,1.81,alto,17.8,,por explicar
+2016-09-06,martes,4213,2296.0,1.84,alto,18.0,,por explicar
+2016-09-07,miércoles,4351,2221.0,1.96,alto,18.0,,por explicar
+2016-09-08,jueves,4208,2220.0,1.9,alto,17.9,,por explicar
+2016-09-09,viernes,3945,2128.0,1.85,alto,17.9,,por explicar
+2016-09-10,sábado,2546,1439.0,1.77,alto,17.9,,por explicar
+2016-09-11,domingo,2531,1170.0,2.16,alto,18.0,,por explicar
+2016-09-12,lunes,4153,2297.0,1.81,alto,17.9,,por explicar
+2016-09-13,martes,4377,2396.0,1.83,alto,18.0,,por explicar
+2016-09-14,miércoles,4459,2313.0,1.93,alto,18.0,,por explicar
+2016-09-15,jueves,4052,2533.0,1.6,alto,18.0,,por explicar
+2016-09-18,domingo,2344,1342.0,1.75,alto,18.0,,por explicar
+2016-09-19,lunes,3972,2570.0,1.55,alto,18.0,,por explicar
+2016-09-20,martes,4448,2906.0,1.53,alto,18.0,,por explicar
+2016-09-21,miércoles,4504,2682.0,1.68,alto,18.0,,por explicar
+2016-09-23,viernes,4160,2702.0,1.54,alto,18.0,,por explicar
+2016-11-13,domingo,1006,2368.0,0.42,bajo,18.0,,por explicar
+2016-12-25,domingo,1059,2368.0,0.45,bajo,17.8,Navidad,comportamiento real (calendario)
+2017-01-30,lunes,7122,4735.0,1.5,alto,18.0,,por explicar
+2017-03-20,lunes,3466,7296.0,0.48,bajo,17.9,Natalicio de Benito Juárez (puente),comportamiento real (calendario)
+2017-04-13,jueves,2995,7851.0,0.38,bajo,18.0,Jueves Santo,comportamiento real (calendario)
+2017-04-14,viernes,2352,7415.0,0.32,bajo,17.9,Viernes Santo,comportamiento real (calendario)
+2017-05-01,lunes,3082,7669.0,0.4,bajo,23.9,Día del Trabajo,comportamiento real (calendario)
+2017-11-20,lunes,4434,10021.0,0.44,bajo,17.9,Revolución Mexicana (puente),comportamiento real (calendario)
+2017-12-16,sábado,2502,5828.0,0.43,bajo,18.0,,por explicar
+2017-12-25,lunes,1819,9318.0,0.2,bajo,17.9,Navidad,comportamiento real (calendario)
+2018-01-01,lunes,1663,8630.0,0.19,bajo,17.9,Año Nuevo,comportamiento real (calendario)
+2018-03-29,jueves,5205,11614.0,0.45,bajo,18.0,Jueves Santo,comportamiento real (calendario)
+2018-03-30,viernes,3926,10914.0,0.36,bajo,18.0,Viernes Santo,comportamiento real (calendario)
+2018-05-01,martes,5358,11864.0,0.45,bajo,18.0,Día del Trabajo,comportamiento real (calendario)
+2018-11-19,lunes,5874,12135.0,0.48,bajo,17.9,Revolución Mexicana (puente),comportamiento real (calendario)
+2018-11-28,miércoles,5269,12683.0,0.42,bajo,18.0,,por explicar
+2018-12-24,lunes,5522,12358.0,0.45,bajo,17.8,Nochebuena,comportamiento real (calendario)
+2018-12-25,martes,2426,12736.0,0.19,bajo,18.0,Navidad,comportamiento real (calendario)
+2018-12-31,lunes,4824,12276.0,0.39,bajo,17.9,Fin de año,comportamiento real (calendario)
+2019-01-01,martes,2644,12538.0,0.21,bajo,24.0,Año Nuevo,comportamiento real (calendario)
+2019-03-18,lunes,7456,16006.0,0.47,bajo,18.0,Natalicio de Benito Juárez (puente),comportamiento real (calendario)
+2019-04-18,jueves,7389,16241.0,0.45,bajo,18.0,Jueves Santo,comportamiento real (calendario)
+2019-04-19,viernes,5783,15486.0,0.37,bajo,18.0,Viernes Santo,comportamiento real (calendario)
+2019-05-01,miércoles,7655,16672.0,0.46,bajo,18.0,Día del Trabajo,comportamiento real (calendario)
+2019-09-16,lunes,6099,13988.0,0.44,bajo,18.0,Día de la Independencia,comportamiento real (calendario)
+2019-11-18,lunes,7492,15334.0,0.49,bajo,18.0,Revolución Mexicana (puente),comportamiento real (calendario)
+2019-12-24,martes,6102,14722.0,0.41,bajo,18.0,Nochebuena,comportamiento real (calendario)
+2019-12-25,miércoles,2647,15059.0,0.18,bajo,18.0,Navidad,comportamiento real (calendario)
+2019-12-31,martes,6228,14218.0,0.44,bajo,18.0,Fin de año,comportamiento real (calendario)
+2020-01-01,miércoles,2306,14542.0,0.16,bajo,17.9,Año Nuevo,comportamiento real (calendario)
+2020-02-03,lunes,1778,13372.0,0.13,bajo,17.9,Día de la Constitución (puente),comportamiento real (calendario)
+2020-03-16,lunes,5587,15196.0,0.37,bajo,18.0,Natalicio de Benito Juárez (puente),comportamiento real (calendario)
+2020-03-22,domingo,2790,7283.0,0.38,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-23,lunes,4533,15054.0,0.3,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-24,martes,4578,15949.0,0.29,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-25,miércoles,4943,15863.0,0.31,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-26,jueves,5910,15720.0,0.38,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-27,viernes,6054,14892.0,0.41,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-28,sábado,4690,9543.0,0.49,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-29,domingo,2925,7283.0,0.4,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-30,lunes,6320,13722.0,0.46,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-03-31,martes,6264,15949.0,0.39,bajo,17.9,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-04-01,miércoles,5914,15863.0,0.37,bajo,17.9,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-04-02,jueves,5276,15720.0,0.34,bajo,17.9,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-04-03,viernes,5048,14892.0,0.34,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-04-04,sábado,3972,9543.0,0.42,bajo,18.0,Inicio de la pandemia COVID-19 (hipótesis),comportamiento real (calendario)
+2020-04-05,domingo,2569,7283.0,0.35,bajo,17.8,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-06,lunes,4543,13722.0,0.33,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-07,martes,4771,15949.0,0.3,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-08,miércoles,4582,15863.0,0.29,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-09,jueves,3521,15720.0,0.22,bajo,18.0,Jueves Santo,comportamiento real (calendario)
+2020-04-10,viernes,2939,14892.0,0.2,bajo,17.9,Viernes Santo,comportamiento real (calendario)
+2020-04-11,sábado,3005,9190.0,0.33,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-12,domingo,2438,6256.0,0.39,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-14,martes,5013,14186.0,0.35,bajo,17.9,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-15,miércoles,5021,13524.0,0.37,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-16,jueves,4985,12696.0,0.39,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-04-17,viernes,4956,11826.0,0.42,bajo,18.0,Vacaciones de Semana Santa / Pascua,comportamiento real (calendario)
+2020-12-25,viernes,1652,8730.0,0.19,bajo,17.8,Navidad,comportamiento real (calendario)
+2021-01-01,viernes,1767,8686.0,0.2,bajo,23.5,Año Nuevo,comportamiento real (calendario)
+2021-12-25,sábado,2456,8420.0,0.29,bajo,24.0,Navidad,comportamiento real (calendario)
+2021-12-31,viernes,5972,12140.0,0.49,bajo,24.0,Fin de año,comportamiento real (calendario)
+2022-01-01,sábado,2777,8420.0,0.33,bajo,23.9,Año Nuevo,comportamiento real (calendario)
+2022-04-15,viernes,6198,13424.0,0.46,bajo,24.0,Viernes Santo,comportamiento real (calendario)
+2022-09-16,viernes,6548,13338.0,0.49,bajo,24.0,Día de la Independencia,comportamiento real (calendario)
+2022-11-21,lunes,6401,14412.0,0.44,bajo,24.0,Revolución Mexicana (puente),comportamiento real (calendario)
+2022-12-25,domingo,3011,7878.0,0.38,bajo,24.0,Navidad,comportamiento real (calendario)
+2023-01-01,domingo,3611,7791.0,0.46,bajo,24.0,Año Nuevo,comportamiento real (calendario)
+2023-04-07,viernes,6260,14143.0,0.44,bajo,23.7,Viernes Santo,comportamiento real (calendario)
+2023-05-01,lunes,6613,14008.0,0.47,bajo,24.0,Día del Trabajo,comportamiento real (calendario)
+2023-12-25,lunes,2813,12866.0,0.22,bajo,24.0,Navidad,comportamiento real (calendario)
+2024-01-01,lunes,3412,12180.0,0.28,bajo,23.9,Año Nuevo,comportamiento real (calendario)
+2024-02-16,viernes,6575,14102.0,0.47,bajo,24.0,,por explicar
+2024-03-29,viernes,7059,15198.0,0.46,bajo,24.0,Viernes Santo,comportamiento real (calendario)
+2024-12-24,martes,7074,15194.0,0.47,bajo,23.9,Nochebuena,comportamiento real (calendario)
+2024-12-25,miércoles,2782,15077.0,0.18,bajo,24.0,Navidad,comportamiento real (calendario)
+2024-12-31,martes,7080,14826.0,0.48,bajo,23.9,Fin de año,comportamiento real (calendario)
+2025-01-01,miércoles,3404,14852.0,0.23,bajo,24.0,Año Nuevo,comportamiento real (calendario)
+2025-04-18,viernes,6908,14542.0,0.48,bajo,24.0,Viernes Santo,comportamiento real (calendario)
+2025-09-16,martes,6678,14254.0,0.47,bajo,24.0,Día de la Independencia,comportamiento real (calendario)
+2025-12-24,miércoles,7239,14777.0,0.49,bajo,23.8,Nochebuena,comportamiento real (calendario)
+2025-12-25,jueves,3113,14682.0,0.21,bajo,23.8,Navidad,comportamiento real (calendario)
+2025-12-31,miércoles,7278,14562.0,0.5,bajo,24.0,Fin de año,comportamiento real (calendario)
+2026-01-01,jueves,3616,14306.0,0.25,bajo,23.9,Año Nuevo,comportamiento real (calendario)
+2026-02-22,domingo,2275,8712.0,0.26,bajo,23.7,,por explicar
+2026-02-23,lunes,3676,13423.0,0.27,bajo,23.8,,por explicar
+2026-04-03,viernes,6746,13834.0,0.49,bajo,24.0,Viernes Santo,comportamiento real (calendario)
+2026-05-01,viernes,6118,13466.0,0.45,bajo,24.0,Día del Trabajo,comportamiento real (calendario)
+2026-07-04,sábado,12842,8358.0,1.54,alto,24.0,,por explicar
+2026-09-21,lunes,20291,13385.0,1.52,alto,24.0,,por explicar
