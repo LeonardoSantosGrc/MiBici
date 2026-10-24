@@ -2,6 +2,8 @@
 
 Small synthetic trips with a known answer: for each scenario (opening mid-month,
 inactive month, retired station) we know exactly which hours must exist.
+
+Structure of every test: 1) prepare the trips, 2) build the base, 3) assert.
 """
 
 import pandas as pd
@@ -11,6 +13,7 @@ from mibici.station_hour import build_station_hour_base, count_departures
 
 def make_trips(rows):
     """Build minimal interim trips from (origin, destination, start) tuples."""
+    # Solo las 3 columnas que usa la grilla, con los mismos tipos que interim
     trips = pd.DataFrame(
         rows, columns=["origin_station_id", "destination_station_id", "started_at"]
     )
@@ -23,6 +26,7 @@ def make_trips(rows):
 
 def hours_of(base, station):
     """Rows of one station in the base."""
+    # Filtra la base para revisar una sola estación
     return base[base["station_id"] == station]
 
 
@@ -37,8 +41,10 @@ def test_departures_are_counted_per_station_and_hour():
         ]
     )
 
+    # Se indexa por (estación, hora) para consultar cada conteo directamente
     counts = count_departures(trips).set_index(["station_id", "hour_start"])["departures"]
 
+    # 08:05 y 08:55 caen en la hora 08:00; 09:10 cae en la hora 09:00
     assert counts.loc[(1, pd.Timestamp("2025-03-01 08:00"))] == 2
     assert counts.loc[(1, pd.Timestamp("2025-03-01 09:00"))] == 1
 
@@ -48,6 +54,7 @@ def test_active_hour_without_trips_is_a_valid_zero():
     base = build_station_hour_base(make_trips([(1, 2, "2025-03-01 08:05")]))
     station = hours_of(base, 1)
 
+    # Un día activo = 24 filas
     assert len(station) == 24
     assert station["departures"].sum() == 1
     # Las otras 23 horas existen y valen 0 (ceros válidos)
@@ -60,8 +67,9 @@ def test_no_rows_before_first_trip_even_mid_month():
 
     station = hours_of(build_station_hour_base(trips), 1)
 
+    # La primera hora es la medianoche de su primer día, no el 1 de marzo
     assert station["hour_start"].min() == pd.Timestamp("2025-03-25 00:00")
-    # Del 25 al 31 de marzo: 7 días x 24 horas
+    # Del 25 al 31 de marzo: 7 días x 24 horas (con bordes por mes serían 31 x 24)
     assert len(station) == 7 * 24
 
 
@@ -83,6 +91,7 @@ def test_no_rows_after_last_trip_of_a_retired_station():
 
     base = build_station_hour_base(trips)
 
+    # La última hora de la estación 1 es el final de su último día; nada del 3 al 10
     assert hours_of(base, 1)["hour_start"].max() == pd.Timestamp("2025-03-02 23:00")
 
 
@@ -91,6 +100,7 @@ def test_station_that_only_receives_trips_is_active_with_zero_departures():
     base = build_station_hour_base(make_trips([(1, 2, "2025-03-01 08:05")]))
     station = hours_of(base, 2)
 
+    # Está activa (24 horas) y todas sus horas son ceros válidos
     assert len(station) == 24
     assert station["departures"].sum() == 0
 
@@ -99,16 +109,19 @@ def test_calendar_columns():
     # 2025-03-01 fue sábado; la estación opera ese día y el lunes 3 (sin hueco de mes)
     trips = make_trips([(1, 2, "2025-03-01 08:05"), (1, 2, "2025-03-03 23:10")])
 
+    # Solo la estación 1 (la 2 también tiene filas a esas horas), indexada por hora
     base = hours_of(build_station_hour_base(trips), 1).set_index("hour_start")
 
     saturday = base.loc[pd.Timestamp("2025-03-01 08:00")]
     monday = base.loc[pd.Timestamp("2025-03-03 23:00")]
+    # day_of_week: 0 = lunes ... 5 = sábado ... 6 = domingo
     assert saturday["hour"] == 8 and saturday["day_of_week"] == 5 and saturday["is_weekend"]
     assert monday["hour"] == 23 and monday["day_of_week"] == 0 and not monday["is_weekend"]
     assert saturday["date"] == pd.Timestamp("2025-03-01") and saturday["month"] == 3
 
 
 def test_every_departure_lands_in_the_grid_and_keys_are_unique():
+    # Casos en los bordes: una salida a las 23:59 y otra exactamente a medianoche
     trips = make_trips(
         [
             (1, 2, "2025-03-01 08:05"),
@@ -119,7 +132,7 @@ def test_every_departure_lands_in_the_grid_and_keys_are_unique():
 
     base = build_station_hour_base(trips)
 
-    # Ninguna salida se pierde al construir la grilla
+    # Ninguna salida se pierde al construir la grilla (misma validación que summary.json)
     assert base["departures"].sum() == len(trips)
     # No hay combinaciones estación-hora repetidas
     assert not base.duplicated(["station_id", "hour_start"]).any()
