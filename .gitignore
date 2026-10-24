@@ -208,3 +208,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# MLflow: estado local generado por el Tracking Server (no versionar)
+/mlflow/
+mlruns/
+mlartifacts/
+*.db
+*.sqlite
+*.sqlite3

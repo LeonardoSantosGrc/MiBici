@@ -187,7 +187,7 @@ def parse_datetimes(values: pd.Series) -> tuple[pd.Series, dict[str, int]]:
 
     for name, fmt in DATETIME_FORMATS.items():
         # Solo se intentan los valores no vacíos que ningún formato anterior pudo leer
-        pending = parsed.isna() & values.ne("")
+        pending = parsed.isna() & values.notna() & values.ne("")
         # errors="coerce": lo que no coincide con el formato queda como NaT
         attempt = pd.to_datetime(values[pending], format=fmt, errors="coerce")
         parsed.loc[attempt.index] = attempt

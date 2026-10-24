@@ -23,6 +23,9 @@ make lint               # ruff
 
 make data               # descarga los CSV oficiales a data/raw/ y genera references/data_manifest.csv
 make profile            # perfila data/raw/ (solo lectura) y escribe reports/profiling/
+
+make mlflow             # (otra terminal) MLflow local en http://127.0.0.1:5000
+make interim            # data/raw -> data/interim (Parquet) + reports/interim/ + corrida en MLflow
 ```
 
 Pruebas controladas con pocos archivos:
@@ -30,7 +33,31 @@ Pruebas controladas con pocos archivos:
 ```bash
 make data DATA_ARGS="--limit 1"
 make profile PROFILE_ARGS="--limit 2"
+make interim INTERIM_ARGS="--limit 3 --no-track"   # sin registrar en MLflow
 ```
+
+### Preparación de datos (capa interim)
+
+`make interim` lee los 142 CSV de viajes y la nomenclatura sin modificarlos y genera:
+
+| Salida | Contenido |
+|---|---|
+| `data/interim/trips/year=AAAA/` | Viajes normalizados (nombres, tipos, faltantes), con duración, flags de calidad (`flag_*`) y linaje (`source_file`, `source_sha256`) |
+| `data/interim/stations.parquet` | Ciclo de vida por estación (primer/último mes activo, meses inactivos, nueva, retirada) cruzado con la nomenclatura 2026-09 (`snapshot_*`) |
+| `reports/interim/` | `quality_summary.json`, `schema.json` y `file_summary.csv` (filas por archivo antes y después) |
+
+Reglas: la única eliminación son los duplicados exactos; el resto de anomalías solo se
+marcan con flags y su tratamiento se decide con evidencia del EDA. La capacidad de la
+nomenclatura es una sola foto (2026-09) y no se usa como dato histórico.
+
+### MLflow
+
+Estado local en `mlflow/` (fuera de Git): `backend/mlflow.db` (SQLite: experimentos,
+parámetros, métricas, tags) y `artifacts/` (archivos de evidencia). Cada versión del
+dataset es una corrida en el experimento `mibici-datasets` con las reglas y umbrales
+(parámetros), los conteos de calidad (métricas), el commit de Git (tags), los reportes
+de `reports/interim/` (artefactos) y el digest y esquema de los datasets (inputs). Los
+datos no se suben a MLflow.
 
 Si la descarga se interrumpe, basta con repetir `make data`: los archivos completos se
 omiten y los incompletos (`.part`) no se consideran válidos.
@@ -43,6 +70,8 @@ omiten y los incompletos (`.part`) no se consideran válidos.
 | `references/data_manifest.csv` | Sí | `make data` (nombre, URL, tamaño y SHA-256 por archivo) |
 | `reports/profiling/raw_trips_profile.csv`, `nomenclature_profile.csv` | Sí | `make profile` (resúmenes usados como evidencia) |
 | `reports/profiling/station_month_counts.csv`, `daily_trip_counts.csv`, `nomenclature_stations.csv` | No | `make profile` |
+| `reports/interim/` | Sí | `make interim` (resúmenes de calidad, esquema y linaje por archivo) |
+| `mlflow/` | No | `make mlflow` (estado local del Tracking Server) |
 | `reports/figures/` | Sí | Ejecutando los notebooks |
 | `notebooks/` | Sí, con resultados | Pueden re-ejecutarse para regenerarlos |
 
@@ -123,6 +152,14 @@ Reglas del equipo:
     ├── dataset.py              <- Scripts to download or generate data
     │
     ├── profiling.py            <- Read-only profiling of the raw data
+    │
+    ├── preparation.py          <- Trip normalisation, lineage, duration, flags, duplicates
+    │
+    ├── stations.py             <- Station snapshot, lifecycle and metadata flags
+    │
+    ├── interim.py              <- `make interim`: builds data/interim and reports/interim
+    │
+    ├── tracking.py             <- MLflow helpers (dataset runs, digest, Git info)
     │
     ├── features.py             <- Code to create features for modeling
     │
