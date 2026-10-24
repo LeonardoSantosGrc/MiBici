@@ -1,0 +1,15 @@
+{
+  "n_rows": 28246536,
+  "n_stations": 486,
+  "hour_start_min": "2014-12-01 00:00:00",
+  "hour_start_max": "2026-09-30 23:00:00",
+  "n_trips_interim": 39078226,
+  "departures_total": 39078226,
+  "zero_share": 0.5441,
+  "departures_mean": 1.3835,
+  "departures_p50": 0.0,
+  "departures_p90": 4.0,
+  "departures_p99": 11.0,
+  "departures_max": 207,
+  "duplicated_keys": 0
+}

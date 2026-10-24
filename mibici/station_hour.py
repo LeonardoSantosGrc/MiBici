@@ -10,10 +10,25 @@ This is a technical base for the EDA and for building processed_v1; no flag
 is excluded here.
 """
 
+import json
+
+from loguru import logger
 import numpy as np
 import pandas as pd
+import typer
 
+from mibici.config import INTERIM_DATA_DIR, REPORTS_DIR
 from mibici.stations import station_month_activity
+
+app = typer.Typer()
+
+# Entrada (viajes de interim) y salidas: la base es intermedia, por eso va a data/interim
+TRIPS_DIR = INTERIM_DATA_DIR / "trips"
+STATION_HOUR_PATH = INTERIM_DATA_DIR / "station_hour_base.parquet"
+STATION_HOUR_REPORTS_DIR = REPORTS_DIR / "station_hour"
+
+# Solo las columnas que necesita la grilla (lectura ~1 s en lugar de cargar las 21)
+TRIP_COLUMNS = ["origin_station_id", "destination_station_id", "started_at"]
 
 
 def station_active_days(trips: pd.DataFrame) -> pd.DataFrame:
@@ -102,3 +117,47 @@ def add_calendar_columns(base: pd.DataFrame) -> pd.DataFrame:
     base["month"] = base["hour_start"].dt.month
 
     return base
+
+
+def base_summary(base: pd.DataFrame, n_trips: int) -> dict:
+    """Counts that describe the base; used to validate it and as evidence."""
+    departures = base["departures"]
+    return {
+        "n_rows": len(base),
+        "n_stations": int(base["station_id"].nunique()),
+        "hour_start_min": str(base["hour_start"].min()),
+        "hour_start_max": str(base["hour_start"].max()),
+        # Toda salida de interim debe caer en la grilla: ambos números deben coincidir
+        "n_trips_interim": n_trips,
+        "departures_total": int(departures.sum()),
+        "zero_share": round(float((departures == 0).mean()), 4),
+        "departures_mean": round(float(departures.mean()), 4),
+        "departures_p50": float(departures.quantile(0.5)),
+        "departures_p90": float(departures.quantile(0.9)),
+        "departures_p99": float(departures.quantile(0.99)),
+        "departures_max": int(departures.max()),
+        "duplicated_keys": int(base.duplicated(["station_id", "hour_start"]).sum()),
+    }
+
+
+@app.command()
+def main() -> None:
+    """Build data/interim/station_hour_base.parquet from the interim trips."""
+    trips = pd.read_parquet(TRIPS_DIR, columns=TRIP_COLUMNS)
+    base = build_station_hour_base(trips)
+
+    base.to_parquet(STATION_HOUR_PATH, index=False)
+
+    # Resumen pequeño como evidencia versionada (los datos quedan fuera de Git)
+    STATION_HOUR_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    summary = base_summary(base, n_trips=len(trips))
+    (STATION_HOUR_REPORTS_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
+
+    logger.success(
+        f"Station x hour base: {summary['n_rows']:,} rows, {summary['n_stations']} stations, "
+        f"{summary['zero_share']:.1%} zeros. Output: {STATION_HOUR_PATH}"
+    )
+
+
+if __name__ == "__main__":
+    app()

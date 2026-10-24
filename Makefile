@@ -83,6 +83,11 @@ INTERIM_ARGS ?=
 interim:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.interim $(INTERIM_ARGS)
 
+## Build data/interim/station_hour_base.parquet (station x hour departures, valid zeros)
+.PHONY: station-hour
+station-hour:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.station_hour
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
