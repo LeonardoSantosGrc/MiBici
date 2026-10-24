@@ -1,5 +1,5 @@
 filename,url,size_bytes,sha256,status
-datos_abiertos_2014_12.csv,https://mibici.net/site/assets/files/1079/datos_abiertos_2014_12.csv,1585143,8c4936effb3f6e21bc9d03393803901c337d7ea35f97c24ccde13f5b46de871c,existing
+datos_abiertos_2014_12.csv,https://mibici.net/site/assets/files/1079/datos_abiertos_2014_12.csv,1585143,8c4936effb3f6e21bc9d03393803901c337d7ea35f97c24ccde13f5b46de871c,downloaded
 datos_abiertos_2015_01.csv,https://mibici.net/site/assets/files/1084/datos_abiertos_2015_01.csv,2135956,b7866167d0888374d3d333179bab713d70eaf9197bfbfb8ac21532bfcda2c3e7,downloaded
 datos_abiertos_2015_02.csv,https://mibici.net/site/assets/files/1097/datos_abiertos_2015_02.csv,2205694,9478544ac6829513bc39436d2d4770b7b9195c6590303f46eb73f593b969461a,downloaded
 datos_abiertos_2015_03.csv,https://mibici.net/site/assets/files/1098/datos_abiertos_2015_03.csv,2437331,1ab4a8b8e2e38aede863d774e345674504d71d8815b4ecf01463b41904a74f73,downloaded
