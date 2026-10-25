@@ -6,148 +6,150 @@
 
 MLOps project for analyzing, preparing, versioning, and modeling MiBici open mobility data.
 
-## Uso rápido (equipo)
+## Quick start (team)
 
-Los datos no se versionan en Git: todo lo que está en `data/` y los artefactos
-derivados de `reports/profiling/` se regeneran con los comandos siguientes.
+Data is not versioned in Git: everything under `data/` and the derived artifacts in
+`reports/profiling/` are regenerated with the commands below.
 
 ```bash
 git clone git@github.com:LeonardoSantosGrc/MiBici.git
 cd MiBici
 
-make setup              # crea o actualiza el entorno conda y registra el kernel "Python (mibici)"
+make setup              # create or update the conda environment and register the "Python (mibici)" kernel
 conda activate mibici
 
 make test               # pytest
 make lint               # ruff
 
-make data               # descarga los CSV oficiales a data/raw/ y genera references/data_manifest.csv
-make profile            # perfila data/raw/ (solo lectura) y escribe reports/profiling/
+make data               # download the official CSV files to data/raw/ and build references/data_manifest.csv
+make profile            # profile data/raw/ (read-only) and write reports/profiling/
 
-make mlflow             # (otra terminal) MLflow local en http://127.0.0.1:5000
-make interim            # data/raw -> data/interim (Parquet) + reports/interim/ + corrida en MLflow
+make mlflow             # (another terminal) local MLflow at http://127.0.0.1:5000
+make interim            # data/raw -> data/interim (Parquet) + reports/interim/ + MLflow run
 make station-hour       # data/interim -> data/interim/station_hour_base.parquet + reports/station_hour/
-make processed          # data/interim -> data/processed/station_hour_v1.parquet + reports/processed/ + corrida en MLflow
+make processed          # data/interim -> data/processed/station_hour_v1.parquet + reports/processed/ + MLflow run
 ```
 
-Pruebas controladas con pocos archivos:
+Quick checks with a few files:
 
 ```bash
 make data DATA_ARGS="--limit 1"
 make profile PROFILE_ARGS="--limit 2"
-make interim INTERIM_ARGS="--limit 3 --no-track"   # sin registrar en MLflow
-make processed PROCESSED_ARGS="--no-track"         # sin registrar en MLflow
+make interim INTERIM_ARGS="--limit 3 --no-track"   # without logging to MLflow
+make processed PROCESSED_ARGS="--no-track"         # without logging to MLflow
 ```
 
-Si la descarga se interrumpe, basta con repetir `make data`: los archivos completos se
-omiten y los incompletos (`.part`) no se consideran válidos.
+If a download is interrupted, just run `make data` again: complete files are skipped and
+incomplete ones (`.part`) are not considered valid.
 
-### Preparación de datos (capa interim)
+### Data preparation (interim layer)
 
-`make interim` lee los 142 CSV de viajes y la nomenclatura sin modificarlos y genera:
+`make interim` reads the 142 trip CSV files and the station nomenclature without modifying
+them and produces:
 
-| Salida | Contenido |
+| Output | Content |
 |---|---|
-| `data/interim/trips/year=AAAA/` | Viajes normalizados (nombres, tipos, faltantes), con duración, flags de calidad (`flag_*`) y linaje (`source_file`, `source_sha256`) |
-| `data/interim/stations.parquet` | Ciclo de vida por estación (primer/último mes activo, meses inactivos, nueva, retirada) cruzado con la nomenclatura 2026-09 (`snapshot_*`) |
-| `reports/interim/` | `quality_summary.json`, `schema.json` y `file_summary.csv` (filas por archivo antes y después) |
+| `data/interim/trips/year=YYYY/` | Normalized trips (names, types, missing values), with duration, quality flags (`flag_*`) and lineage (`source_file`, `source_sha256`) |
+| `data/interim/stations.parquet` | Lifecycle per station (first/last active month, inactive months, new, retired) joined with the 2026-09 nomenclature (`snapshot_*`) |
+| `reports/interim/` | `quality_summary.json`, `schema.json` and `file_summary.csv` (rows per file before and after) |
 
-Reglas: la única eliminación son los duplicados exactos; el resto de anomalías solo se
-marcan con flags y su tratamiento se decide con evidencia del EDA. La capacidad de la
-nomenclatura es una sola foto (2026-09) y no se usa como dato histórico.
+Rules: the only removal is exact duplicates; all other anomalies are only flagged, and how
+to treat them is decided with evidence from the EDA. Station capacity comes from a single
+snapshot (2026-09) and is not used as historical data.
 
-### Base estación × hora (`make station-hour`)
+### Station × hour base (`make station-hour`)
 
-`data/interim/station_hour_base.parquet`: una fila por estación y hora en que la estación
-estaba activa, con el número de salidas (viajes que inician en esa estación y hora) y
-columnas de calendario. Una hora sin salidas solo existe (con valor 0) si la estación
-operaba: no se crean filas antes del primer viaje, después del último ni en meses sin
-viajes. Es una base técnica para el EDA; no aplica decisiones de modelado.
+`data/interim/station_hour_base.parquet`: one row per station and hour in which the station
+was active, with the number of departures (trips starting at that station in that hour) and
+calendar columns. An hour without departures only exists (with value 0) if the station was
+operating: no rows are created before its first trip, after its last trip, or in months
+without trips. It is a technical base for the EDA; it applies no modeling decisions.
 
-### Dataset para modelar: `processed_v1` (`make processed`)
+### Modeling dataset: `processed_v1` (`make processed`)
 
-`data/processed/station_hour_v1.parquet` aplica las decisiones documentadas con evidencia
-en `notebooks/1.04-lsg-target-integration.ipynb` (sección 8):
+`data/processed/station_hour_v1.parquet` applies the decisions documented with evidence in
+`notebooks/1.04-lsg-target-integration.ipynb` (section 8):
 
-- unidad estación × hora, desde 2022-01-01 y solo en horario de servicio (00:00–00:59 y 05:00–23:59);
-- no cuentan como salidas los viajes cortos que regresan a la misma estación ni los cortos
-  entre estaciones que son imposibles frente a la duración típica de su pareja (siguen en interim);
-- columnas: `station_id`, `hour_start`, `departures` (target), `hour`, `day_of_week`,
+- station × hour unit, from 2022-01-01 and only during service hours (00:00–00:59 and 05:00–23:59);
+- short trips that return to the same station, and short cross-station trips that are
+  impossible given the typical duration of their origin–destination pair, are not counted
+  as departures (they remain in interim);
+- columns: `station_id`, `hour_start`, `departures` (target), `hour`, `day_of_week`,
   `is_weekend`, `month`, `station_age_days`, `is_new_station_cohort`, `is_extraordinary_event`.
 
-Las decisiones son constantes de `mibici/processed.py`; el notebook 1.04 verifica que el
-código y lo documentado coincidan. `reports/processed/` contiene el resumen, el esquema y
-las decisiones aplicadas.
+The decisions are constants in `mibici/processed.py`; notebook 1.04 checks that the code and
+the documented decisions match. `reports/processed/` contains the summary, the schema and the
+applied decisions.
 
 ### MLflow
 
-Estado local en `mlflow/` (fuera de Git): `backend/mlflow.db` (SQLite: experimentos,
-parámetros, métricas, tags) y `artifacts/` (archivos de evidencia). Cada versión del
-dataset es una corrida en el experimento `mibici-datasets` (`build_interim_v1`,
-`build_processed_v1`) con las reglas y umbrales (parámetros), los conteos de calidad
-(métricas), el commit de Git (tags), los reportes de `reports/interim/` o
-`reports/processed/` (artefactos) y el digest y esquema de los datasets (inputs). Los
-datos no se suben a MLflow.
+Local state in `mlflow/` (outside Git): `backend/mlflow.db` (SQLite: experiments, parameters,
+metrics, tags) and `artifacts/` (evidence files). Each dataset version is a run in the
+`mibici-datasets` experiment (`build_interim_v1`, `build_processed_v1`) with the rules and
+thresholds (parameters), quality counts (metrics), the Git commit (tags), the reports from
+`reports/interim/` or `reports/processed/` (artifacts), and the dataset digest and schema
+(inputs). Data is not uploaded to MLflow.
 
-### Qué se versiona
+### What is versioned
 
-| Ruta | Git | Cómo se obtiene |
+| Path | Git | How it is produced |
 |---|---|---|
-| `data/raw/`, `data/interim/`, `data/processed/`, `data/external/` | No | `make data` (raw); pasos posteriores del pipeline |
-| `references/data_manifest.csv` | Sí | `make data` (nombre, URL, tamaño y SHA-256 por archivo) |
-| `reports/profiling/raw_trips_profile.csv`, `nomenclature_profile.csv` | Sí | `make profile` (resúmenes usados como evidencia) |
+| `data/raw/`, `data/interim/`, `data/processed/`, `data/external/` | No | `make data` (raw); later pipeline steps |
+| `references/data_manifest.csv` | Yes | `make data` (name, URL, size and SHA-256 per file) |
+| `reports/profiling/raw_trips_profile.csv`, `nomenclature_profile.csv` | Yes | `make profile` (summaries used as evidence) |
 | `reports/profiling/station_month_counts.csv`, `daily_trip_counts.csv`, `nomenclature_stations.csv` | No | `make profile` |
-| `reports/interim/` | Sí | `make interim` (resúmenes de calidad, esquema y linaje por archivo) |
-| `reports/station_hour/` | Sí | `make station-hour` (resumen de validación de la base) |
-| `reports/processed/` | Sí | `make processed` (resumen, esquema y decisiones de `processed_v1`) |
-| `reports/1.02-erc-atypical-days.csv` | Sí | Notebook 1.02 (días atípicos, reutilizado por el 1.04) |
-| `reports/evidence/` | Sí | Capturas manuales para la entrega (p. ej. MLflow) |
-| `mlflow/` | No | `make mlflow` (estado local del Tracking Server) |
-| `reports/figures/` | Sí | Ejecutando los notebooks |
-| `notebooks/` | Sí, con resultados | Pueden re-ejecutarse para regenerarlos |
+| `reports/interim/` | Yes | `make interim` (quality summaries, schema and per-file lineage) |
+| `reports/station_hour/` | Yes | `make station-hour` (base validation summary) |
+| `reports/processed/` | Yes | `make processed` (summary, schema and decisions of `processed_v1`) |
+| `reports/1.02-erc-atypical-days.csv` | Yes | Notebook 1.02 (atypical days, reused by notebook 1.04) |
+| `reports/evidence/` | Yes | Manual screenshots for the deliverable (e.g. MLflow) |
+| `mlflow/` | No | `make mlflow` (local Tracking Server state) |
+| `reports/figures/` | Yes | By running the notebooks |
+| `notebooks/` | Yes, with outputs | Can be re-run to regenerate them |
 
-No subir `.env`, credenciales, tokens ni archivos temporales.
+Do not commit `.env`, credentials, tokens or temporary files.
 
 ### Notebooks
 
-#### Cómo nombrar un notebook
+#### Naming a notebook
 
-Seguimos la convención de Cookiecutter Data Science: `FASE.NUM-iniciales-descripcion.ipynb`
+We follow the Cookiecutter Data Science convention: `PHASE.NUM-initials-description.ipynb`
 
-| Parte | Qué indica | Valores |
+| Part | Meaning | Values |
 |---|---|---|
-| `FASE` | Etapa del análisis | `0` exploración · `1` limpieza y features · `2` visualización · `3` modelado · `4` publicación |
-| `NUM` | Orden dentro de la fase, con dos dígitos | `01`, `02`, … |
-| `iniciales` | Responsable del notebook | p. ej. `lsg` |
-| `descripcion` | Qué hace, en inglés, minúsculas y separado con guiones | p. ej. `profile-raw-data` |
+| `PHASE` | Analysis stage | `0` exploration · `1` cleaning and features · `2` visualization · `3` modeling · `4` publication |
+| `NUM` | Order within the phase, two digits | `01`, `02`, … |
+| `initials` | Notebook owner | e.g. `lsg` |
+| `description` | What it does, in English, lowercase, hyphen-separated | e.g. `profile-raw-data` |
 
-Ejemplos: `0.02-lsg-profile-raw-data.ipynb`, `1.01-abc-clean-trips.ipynb`, `3.01-abc-baseline-model.ipynb`.
+Examples: `0.02-lsg-profile-raw-data.ipynb`, `1.01-abc-clean-trips.ipynb`, `3.01-abc-baseline-model.ipynb`.
 
-Reglas del equipo:
+Team rules:
 
-- Antes de crear uno, revisar el último `NUM` de esa fase para no repetirlo.
-- La lógica que se repita entre notebooks se mueve a `mibici/` y se importa (ver `mibici/profiling.py`).
-- Los notebooks se suben **con sus resultados**; cualquiera puede volver a ejecutarlos.
-- Evitar que dos personas editen el mismo notebook a la vez: los conflictos en `.ipynb` son difíciles de resolver.
+- Before creating one, check the last `NUM` of that phase so it is not repeated.
+- Logic repeated across notebooks moves to `mibici/` and is imported (see `mibici/profiling.py`).
+- Notebooks are committed **with their outputs**; anyone can re-run them.
+- Code, comments and commit messages are in English; notebook explanations (markdown) are in Spanish.
+- Avoid two people editing the same notebook at the same time: `.ipynb` conflicts are hard to resolve.
 
-#### Notebooks actuales
+#### Current notebooks
 
-- `0.01-lsg-inspect-mibici-links.ipynb`: inspección de la fuente oficial y validación de enlaces.
-- `0.02-lsg-profile-raw-data.ipynb`: diagnóstico del histórico raw. Requiere `make data` y
-  `make profile` antes de ejecutarse:
+- `0.01-lsg-inspect-mibici-links.ipynb`: inspection of the official source and link validation.
+- `0.02-lsg-profile-raw-data.ipynb`: diagnosis of the raw history. Requires `make data` and
+  `make profile` before running:
 
   ```bash
   jupyter nbconvert --to notebook --execute --inplace notebooks/0.02-lsg-profile-raw-data.ipynb
   ```
 
-- EDA del PR2 (requieren `make interim`):
-  - `1.01-jedm-temporal-patterns.ipynb` (José Eduardo): patrones por hora y día de la semana.
-  - `1.02-erc-seasonality-anomalies.ipynb` (Erik): estacionalidad, días atípicos y 2020–2021.
-  - `1.03-jevg-station-expansion.ipynb` (José Emmanuel): estaciones nuevas de 2026 frente a consolidadas.
-- `1.04-lsg-target-integration.ipynb` (Leonardo): valida la base estación × hora, integra
-  los tres EDA (citas por celda, sus archivos y verificación contra la base), documenta
-  las decisiones y valida `processed_v1`. Requiere `make station-hour`, `make processed`
-  y, para la sección de MLflow, `make mlflow`.
+- PR2 EDA (require `make interim`):
+  - `1.01-jedm-temporal-patterns.ipynb` (José Eduardo): patterns by hour and day of week.
+  - `1.02-erc-seasonality-anomalies.ipynb` (Erik): seasonality, atypical days and 2020–2021.
+  - `1.03-jevg-station-expansion.ipynb` (José Emmanuel): new 2026 stations versus established ones.
+- `1.04-lsg-target-integration.ipynb` (Leonardo): validates the station × hour base, integrates
+  the three EDA notebooks (cell-level citations, their files and cross-checks against the base),
+  documents the decisions and validates `processed_v1`. Requires `make station-hour`,
+  `make processed` and, for the MLflow section, `make mlflow`.
 
 ## Project Organization
 
@@ -167,16 +169,20 @@ Reglas del equipo:
 │
 ├── notebooks          <- Jupyter notebooks. Naming convention is PHASE.NUM, the creator's
 │                         initials, and a short `-` delimited description, e.g.
-│                         `0.02-lsg-profile-raw-data` (see "Cómo nombrar un notebook").
+│                         `0.02-lsg-profile-raw-data` (see "Naming a notebook").
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 
+├── pyproject.toml     <- Project configuration file with package metadata for
 │                         mibici and configuration for tools like black
 │
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
 │
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   ├── evidence       <- Manual screenshots used as evidence for the deliverable (MLflow)
 │   ├── figures        <- Generated graphics and figures to be used in reporting
-│   └── profiling      <- Raw-data profiling tables generated by `make profile`
+│   ├── interim        <- Interim quality summaries generated by `make interim`
+│   ├── processed      <- processed_v1 summary, schema and decisions (`make processed`)
+│   ├── profiling      <- Raw-data profiling tables generated by `make profile`
+│   └── station_hour   <- Station x hour base summary generated by `make station-hour`
 │
 ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
 │                         generated with `pip freeze > requirements.txt`
@@ -207,13 +213,12 @@ Reglas del equipo:
     │
     ├── features.py             <- Code to create features for modeling
     │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
+    ├── modeling
+    │   ├── __init__.py
+    │   ├── predict.py          <- Code to run model inference with trained models
     │   └── train.py            <- Code to train models
     │
     └── plots.py                <- Code to create visualizations
 ```
 
 --------
-
