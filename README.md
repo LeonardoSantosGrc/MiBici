@@ -26,6 +26,8 @@ make profile            # perfila data/raw/ (solo lectura) y escribe reports/pro
 
 make mlflow             # (otra terminal) MLflow local en http://127.0.0.1:5000
 make interim            # data/raw -> data/interim (Parquet) + reports/interim/ + corrida en MLflow
+make station-hour       # data/interim -> data/interim/station_hour_base.parquet + reports/station_hour/
+make processed          # data/interim -> data/processed/station_hour_v1.parquet + reports/processed/ + corrida en MLflow
 ```
 
 Pruebas controladas con pocos archivos:
@@ -34,7 +36,11 @@ Pruebas controladas con pocos archivos:
 make data DATA_ARGS="--limit 1"
 make profile PROFILE_ARGS="--limit 2"
 make interim INTERIM_ARGS="--limit 3 --no-track"   # sin registrar en MLflow
+make processed PROCESSED_ARGS="--no-track"         # sin registrar en MLflow
 ```
+
+Si la descarga se interrumpe, basta con repetir `make data`: los archivos completos se
+omiten y los incompletos (`.part`) no se consideran válidos.
 
 ### Preparación de datos (capa interim)
 
@@ -50,17 +56,38 @@ Reglas: la única eliminación son los duplicados exactos; el resto de anomalía
 marcan con flags y su tratamiento se decide con evidencia del EDA. La capacidad de la
 nomenclatura es una sola foto (2026-09) y no se usa como dato histórico.
 
+### Base estación × hora (`make station-hour`)
+
+`data/interim/station_hour_base.parquet`: una fila por estación y hora en que la estación
+estaba activa, con el número de salidas (viajes que inician en esa estación y hora) y
+columnas de calendario. Una hora sin salidas solo existe (con valor 0) si la estación
+operaba: no se crean filas antes del primer viaje, después del último ni en meses sin
+viajes. Es una base técnica para el EDA; no aplica decisiones de modelado.
+
+### Dataset para modelar: `processed_v1` (`make processed`)
+
+`data/processed/station_hour_v1.parquet` aplica las decisiones documentadas con evidencia
+en `notebooks/1.04-lsg-target-integration.ipynb` (sección 8):
+
+- unidad estación × hora, desde 2022-01-01 y solo en horario de servicio (00:00–00:59 y 05:00–23:59);
+- no cuentan como salidas los viajes cortos que regresan a la misma estación ni los cortos
+  entre estaciones que son imposibles frente a la duración típica de su pareja (siguen en interim);
+- columnas: `station_id`, `hour_start`, `departures` (target), `hour`, `day_of_week`,
+  `is_weekend`, `month`, `station_age_days`, `is_new_station_cohort`, `is_extraordinary_event`.
+
+Las decisiones son constantes de `mibici/processed.py`; el notebook 1.04 verifica que el
+código y lo documentado coincidan. `reports/processed/` contiene el resumen, el esquema y
+las decisiones aplicadas.
+
 ### MLflow
 
 Estado local en `mlflow/` (fuera de Git): `backend/mlflow.db` (SQLite: experimentos,
 parámetros, métricas, tags) y `artifacts/` (archivos de evidencia). Cada versión del
-dataset es una corrida en el experimento `mibici-datasets` con las reglas y umbrales
-(parámetros), los conteos de calidad (métricas), el commit de Git (tags), los reportes
-de `reports/interim/` (artefactos) y el digest y esquema de los datasets (inputs). Los
+dataset es una corrida en el experimento `mibici-datasets` (`build_interim_v1`,
+`build_processed_v1`) con las reglas y umbrales (parámetros), los conteos de calidad
+(métricas), el commit de Git (tags), los reportes de `reports/interim/` o
+`reports/processed/` (artefactos) y el digest y esquema de los datasets (inputs). Los
 datos no se suben a MLflow.
-
-Si la descarga se interrumpe, basta con repetir `make data`: los archivos completos se
-omiten y los incompletos (`.part`) no se consideran válidos.
 
 ### Qué se versiona
 
@@ -71,6 +98,10 @@ omiten y los incompletos (`.part`) no se consideran válidos.
 | `reports/profiling/raw_trips_profile.csv`, `nomenclature_profile.csv` | Sí | `make profile` (resúmenes usados como evidencia) |
 | `reports/profiling/station_month_counts.csv`, `daily_trip_counts.csv`, `nomenclature_stations.csv` | No | `make profile` |
 | `reports/interim/` | Sí | `make interim` (resúmenes de calidad, esquema y linaje por archivo) |
+| `reports/station_hour/` | Sí | `make station-hour` (resumen de validación de la base) |
+| `reports/processed/` | Sí | `make processed` (resumen, esquema y decisiones de `processed_v1`) |
+| `reports/1.02-erc-atypical-days.csv` | Sí | Notebook 1.02 (días atípicos, reutilizado por el 1.04) |
+| `reports/evidence/` | Sí | Capturas manuales para la entrega (p. ej. MLflow) |
 | `mlflow/` | No | `make mlflow` (estado local del Tracking Server) |
 | `reports/figures/` | Sí | Ejecutando los notebooks |
 | `notebooks/` | Sí, con resultados | Pueden re-ejecutarse para regenerarlos |
@@ -108,6 +139,15 @@ Reglas del equipo:
   ```bash
   jupyter nbconvert --to notebook --execute --inplace notebooks/0.02-lsg-profile-raw-data.ipynb
   ```
+
+- EDA del PR2 (requieren `make interim`):
+  - `1.01-jedm-temporal-patterns.ipynb` (José Eduardo): patrones por hora y día de la semana.
+  - `1.02-erc-seasonality-anomalies.ipynb` (Erik): estacionalidad, días atípicos y 2020–2021.
+  - `1.03-jevg-station-expansion.ipynb` (José Emmanuel): estaciones nuevas de 2026 frente a consolidadas.
+- `1.04-lsg-target-integration.ipynb` (Leonardo): valida la base estación × hora, integra
+  los tres EDA (citas por celda, sus archivos y verificación contra la base), documenta
+  las decisiones y valida `processed_v1`. Requiere `make station-hour`, `make processed`
+  y, para la sección de MLflow, `make mlflow`.
 
 ## Project Organization
 
@@ -158,6 +198,10 @@ Reglas del equipo:
     ├── stations.py             <- Station snapshot, lifecycle and metadata flags
     │
     ├── interim.py              <- `make interim`: builds data/interim and reports/interim
+    │
+    ├── station_hour.py         <- `make station-hour`: station x hour base with valid zeros
+    │
+    ├── processed.py            <- `make processed`: processed_v1 with the PR2 decisions
     │
     ├── tracking.py             <- MLflow helpers (dataset runs, digest, Git info)
     │
