@@ -22,5 +22,6 @@ dependencies:
   - requests
   - beautifulsoup4
   - mlflow
+  - seaborn
   - pip:
     - -e .
