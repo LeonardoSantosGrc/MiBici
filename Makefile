@@ -83,6 +83,18 @@ INTERIM_ARGS ?=
 interim:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.interim $(INTERIM_ARGS)
 
+## Build data/interim/station_hour_base.parquet (station x hour departures, valid zeros)
+.PHONY: station-hour
+station-hour:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.station_hour
+
+PROCESSED_ARGS ?=
+
+## Build data/processed/station_hour_v1.parquet (processed_v1) and log it to MLflow
+.PHONY: processed
+processed:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.processed $(PROCESSED_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
