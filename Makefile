@@ -88,6 +88,13 @@ interim:
 station-hour:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.station_hour
 
+PROCESSED_ARGS ?=
+
+## Build data/processed/station_hour_v1.parquet (processed_v1) and log it to MLflow
+.PHONY: processed
+processed:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.processed $(PROCESSED_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
