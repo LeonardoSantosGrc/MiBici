@@ -1,0 +1,17 @@
+{
+  "source_dataset": "interim_v1",
+  "unit": "station_x_hour",
+  "prediction_cutoff_hour": 22,
+  "window_start": "2022-01-01",
+  "closed_hours": "1|2|3|4",
+  "excluded_from_target": "short_same_station|implausible_short_cross_station",
+  "short_cross_min_pair_trips": 30,
+  "short_cross_max_median_ratio": 0.1,
+  "new_station_cohort_since": "2026-01-01",
+  "extraordinary_events": {
+    "2015-10-23": "Hurricane Patricia makes landfall in Jalisco",
+    "2026-02-22": "Road blockades in Jalisco",
+    "2026-02-23": "Road blockades in Jalisco"
+  },
+  "capacity_used": false
+}

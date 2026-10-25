@@ -1,0 +1,12 @@
+{
+  "station_id": "int32",
+  "hour_start": "datetime64[ns]",
+  "departures": "int32",
+  "hour": "int32",
+  "day_of_week": "int32",
+  "is_weekend": "bool",
+  "month": "int32",
+  "station_age_days": "int32",
+  "is_new_station_cohort": "bool",
+  "is_extraordinary_event": "bool"
+}
