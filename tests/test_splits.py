@@ -30,6 +30,7 @@ def make_hours(start: str, end: str) -> pd.DataFrame:
 
 def test_config_splits_are_ordered_and_contiguous():
     periods = list(SPLITS.values())
+    # Compare each split with the next one: train-validation and validation-test
     for (_, end), (next_start, _) in zip(periods, periods[1:]):
         assert end == next_start  # no gap and no overlap
     assert all(start < end for start, end in periods)
@@ -45,6 +46,7 @@ def test_config_windows_are_months_inside_validation():
 
 def test_boundary_hours_go_to_the_right_split():
     df = make_hours("2026-05-31 23:00", "2026-08-01 01:00")
+    # Index the labels by hour to read the split of a given hour
     labels = label_splits(df).set_axis(df["hour_start"])
     assert labels[pd.Timestamp("2026-05-31 23:00")] == "train"
     assert labels[pd.Timestamp("2026-06-01 00:00")] == "validation"
@@ -53,23 +55,28 @@ def test_boundary_hours_go_to_the_right_split():
 
 
 def test_every_row_in_the_data_range_has_exactly_one_split():
+    # Every hour from June to September 2026 gets a split name
     df = make_hours(SPLITS["train"][1], SPLITS["test"][1])
     assert label_splits(df).notna().all()
 
 
+# Runs once per evaluation mode
 @pytest.mark.parametrize("mode", EVALUATION_MODES)
 def test_training_ends_before_evaluation_starts(mode):
     df = make_hours("2026-05-01", "2026-10-01")
     train, evaluate = train_eval_masks(df, mode)
     assert train.any() and evaluate.any()
+    # The last training hour comes before the first evaluated hour
     assert df.loc[train, "hour_start"].max() < df.loc[evaluate, "hour_start"].min()
 
 
+# Runs once per mode other than test
 @pytest.mark.parametrize("mode", [m for m in EVALUATION_MODES if m != "test"])
 def test_test_rows_are_reserved_for_the_test_mode(mode):
     df = make_hours("2026-05-01", "2026-10-01")
     in_test = label_splits(df) == "test"
     train, evaluate = train_eval_masks(df, mode)
+    # No test row is used to train or to evaluate
     assert not (train & in_test).any()
     assert not (evaluate & in_test).any()
 
@@ -90,6 +97,7 @@ def test_rows_without_history_are_not_used_to_train():
 
 def test_unknown_mode_is_rejected():
     df = make_hours("2026-05-01", "2026-07-01")
+    # The call must fail with this message
     with pytest.raises(ValueError, match="Unknown evaluation mode"):
         train_eval_masks(df, "tuning_on_test")
 
@@ -98,4 +106,5 @@ def test_summary_counts_rows_without_history():
     df = make_hours("2026-05-01", "2026-10-01")
     summary = split_summary(df)
     assert summary.loc["train", "rows_without_history"] == 1
+    # Each row is counted once in its split, plus once more if it is in a window month
     assert summary["rows"].sum() == len(df) + summary.loc[list(WINDOWS), "rows"].sum()

@@ -17,16 +17,19 @@ import pandas as pd
 
 from mibici.config import SPLITS, WINDOWS
 
+# Valid modes: validation, window_june, window_july and test
 EVALUATION_MODES = ("validation", *WINDOWS, "test")
 
 
 def period_mask(df: pd.DataFrame, start: str, end: str) -> pd.Series:
     """Rows whose hour_start falls in [start, end)."""
+    # True/False per row; the end date itself is excluded
     return (df["hour_start"] >= start) & (df["hour_start"] < end)
 
 
 def label_splits(df: pd.DataFrame) -> pd.Series:
     """Name of the split (train, validation or test) of every row; NA outside all of them."""
+    # Start empty and write the split name on the rows of each period
     labels = pd.Series(pd.NA, index=df.index, dtype="string")
     for name, (start, end) in SPLITS.items():
         labels[period_mask(df, start, end)] = name
@@ -35,14 +38,17 @@ def label_splits(df: pd.DataFrame) -> pd.Series:
 
 def train_eval_masks(df: pd.DataFrame, mode: str) -> tuple[pd.Series, pd.Series]:
     """Boolean masks of the training rows and the evaluation rows of an evaluation mode."""
+    # The history features are needed to know which rows have no history
     if "history_source" not in df:
         raise ValueError("Add the history features first (mibici.features.add_history_features).")
+    # Every mode trains from the first day of train; only the end and the evaluated period change
     train_start = SPLITS["train"][0]
     if mode == "validation":
         train_end, eval_period = SPLITS["train"][1], SPLITS["validation"]
     elif mode in WINDOWS:
         train_end, eval_period = WINDOWS[mode]["train_end"], WINDOWS[mode]["eval"]
     elif mode == "test":
+        # Final evaluation: train on train + validation, evaluate on test
         train_end, eval_period = SPLITS["validation"][1], SPLITS["test"]
     else:
         raise ValueError(f"Unknown evaluation mode {mode!r}; use one of {EVALUATION_MODES}.")
@@ -54,8 +60,10 @@ def train_eval_masks(df: pd.DataFrame, mode: str) -> tuple[pd.Series, pd.Series]
 
 def split_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Size and composition of train, validation, test and the windows' evaluation months."""
+    # Mask of each period: the three splits plus the evaluated month of each window
     periods = {name: period_mask(df, *dates) for name, dates in SPLITS.items()}
     periods |= {name: period_mask(df, *window["eval"]) for name, window in WINDOWS.items()}
+    # Stations seen in train: the others are new for a model trained on train
     train_stations = set(df.loc[periods["train"], "station_id"])
     rows = []
     for name, mask in periods.items():
@@ -67,10 +75,11 @@ def split_summary(df: pd.DataFrame) -> pd.DataFrame:
                 "end": part["hour_start"].max(),
                 "rows": len(part),
                 "stations": part["station_id"].nunique(),
-                "zero_share": (part["departures"] == 0).mean(),
+                "zero_share": (part["departures"] == 0).mean(),  # share of rows with 0 trips
                 "new_cohort_stations": part.loc[
                     part["is_new_station_cohort"], "station_id"
                 ].nunique(),
+                # Share of rows from stations that have no rows in train
                 "rows_unseen_in_train": (~part["station_id"].isin(train_stations)).mean(),
                 "rows_without_history": int((part["history_source"] == "none").sum()),
             }

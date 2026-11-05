@@ -14,6 +14,7 @@ def make_table(stations: dict[int, tuple[str, list[int]]]) -> pd.DataFrame:
     """Station-hour rows at 08:00 from {station_id: (first day, daily departures)}."""
     frames = []
     for station_id, (first_day, departures) in stations.items():
+        # One 08:00 row per day, starting on the station's first day
         days = pd.date_range(f"{first_day} 08:00", periods=len(departures), freq="D")
         frames.append(
             pd.DataFrame(
@@ -21,16 +22,19 @@ def make_table(stations: dict[int, tuple[str, list[int]]]) -> pd.DataFrame:
                     "station_id": station_id,
                     "hour_start": days,
                     "departures": departures,
+                    # Age in days since the first row: 0, 1, 2, ...
                     "station_age_days": np.arange(len(departures)),
                 }
             )
         )
+    # All stations in one table, like processed_v1
     return pd.concat(frames, ignore_index=True)
 
 
 def row(table: pd.DataFrame, station_id: int, day: str) -> pd.Series:
     """The single row of `station_id` at 08:00 of `day`."""
     match = (table["station_id"] == station_id) & (table["hour_start"] == f"{day} 08:00")
+    # squeeze() turns the one-row table into a Series (one value per column)
     return table.loc[match].squeeze()
 
 
@@ -95,14 +99,17 @@ def test_without_young_stations_falls_back_to_all_stations():
 
 def test_first_week_of_data_has_no_history():
     table = add_history_features(make_table({1: ("2026-01-01", list(range(10)))}))
+    # First seven days: there is no earlier week for any station
     first_week = table["hour_start"] < "2026-01-08"
     assert (table.loc[first_week, "history_source"] == "none").all()
     assert table.loc[first_week, ["avg_4_weeks", "t_168"]].isna().all().all()
+    # From day 8 on, both features always have a value
     assert table.loc[~first_week, ["avg_4_weeks", "t_168"]].notna().all().all()
 
 
 def test_result_does_not_depend_on_row_order():
     table = make_table({1: ("2026-01-01", list(range(35))), 2: ("2026-01-10", [4] * 26)})
     ordered = add_history_features(table)
+    # Shuffle the rows, compute again and put them back in the original order
     shuffled = add_history_features(table.sample(frac=1, random_state=0)).sort_index()
     pd.testing.assert_frame_equal(ordered, shuffled)

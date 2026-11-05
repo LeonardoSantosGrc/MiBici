@@ -21,6 +21,7 @@ import pandas as pd
 
 from mibici.config import HISTORY_WEEKS, YOUNG_STATION_DAYS
 
+# One week back: same weekday and same hour
 WEEK = pd.Timedelta(hours=168)
 
 
@@ -35,19 +36,23 @@ def weekly_mean(weekly_values: list[np.ndarray]) -> np.ndarray:
 
 def station_weeks_back(df: pd.DataFrame, weeks: int) -> list[np.ndarray]:
     """Departures of the same station and hour 1..`weeks` weeks earlier (NaN if no row)."""
+    # Lookup table: departures indexed by (station, hour)
     by_key = df.set_index(["station_id", "hour_start"])["departures"]
+    # A repeated (station, hour) would make the lookup ambiguous
     if not by_key.index.is_unique:
         raise ValueError("Expected one row per (station_id, hour_start).")
     lags = []
     for k in range(1, weeks + 1):
         # Look up (same station, hour_start - k weeks) by key, not by row position
         keys = pd.MultiIndex.from_arrays([df["station_id"], df["hour_start"] - k * WEEK])
+        # Keys with no row in the table (station not open yet) come back as NaN
         lags.append(by_key.reindex(keys).to_numpy(dtype=float))
     return lags
 
 
 def group_weeks_back(hourly: pd.Series, hour_start: pd.Series, weeks: int) -> list[np.ndarray]:
     """Values of an hourly group mean 1..`weeks` weeks before each row (NaN if no value)."""
+    # `hourly` is indexed by hour_start: look up each row's hour minus k weeks
     return [
         hourly.reindex(hour_start - k * WEEK).to_numpy(dtype=float) for k in range(1, weeks + 1)
     ]
@@ -63,6 +68,7 @@ def add_history_features(
     Compute it on the full table before splitting: the history of a validation or test row
     comes from the weeks before it, which are known at its cutoff.
     """
+    # Level 1: the station's own departures 1-4 weeks earlier and their mean
     own_weeks = station_weeks_back(df, history_weeks)
     own_mean = weekly_mean(own_weeks)
 
@@ -70,12 +76,14 @@ def add_history_features(
     young = df["station_age_days"] < young_station_days
     young_hourly = df[young].groupby("hour_start")["departures"].mean()
     all_hourly = df.groupby("hour_start")["departures"].mean()
+    # Level 2 and level 3: those hourly means 1-4 weeks before each row, averaged
     young_mean = weekly_mean(group_weeks_back(young_hourly, df["hour_start"], history_weeks))
     all_mean = weekly_mean(group_weeks_back(all_hourly, df["hour_start"], history_weeks))
 
     # Own history first, then young stations, then all stations
     has_own, has_young = ~np.isnan(own_mean), ~np.isnan(young_mean)
     avg_4_weeks = np.where(has_own, own_mean, np.where(has_young, young_mean, all_mean))
+    # Name of the level used by each row (first condition that is true wins)
     source = np.select(
         [has_own, has_young, ~np.isnan(all_mean)],
         ["own_history", "young_stations", "all_stations"],
@@ -85,9 +93,11 @@ def add_history_features(
     # Last week's value; if the station had no row then, use avg_4_weeks
     t_168 = np.where(np.isnan(own_weeks[0]), avg_4_weeks, own_weeks[0])
 
+    # New columns on a copy; the input table (processed_v1) is not modified
     return df.assign(
         avg_4_weeks=avg_4_weeks,
         t_168=t_168,
+        # Categorical: four repeated labels take far less memory than text
         history_source=pd.Categorical(
             source, categories=["own_history", "young_stations", "all_stations", "none"]
         ),
