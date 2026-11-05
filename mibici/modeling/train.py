@@ -127,7 +127,7 @@ def run_training(
                 mlflow.log_metrics(metrics)
                 mlflow.log_input(dataset, context=mode)
                 # Scores by segment of the model and of the baseline, as a small CSV
-                table = pd.concat({"model": scores, "baseline": baseline_scores})
+                table = pd.concat({"model": scores, "baseline": baseline_scores}, names=["source"])
                 mlflow.log_text(table.to_csv(), "scores_by_segment.csv")
 
         results.append(
