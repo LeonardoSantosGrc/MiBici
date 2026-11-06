@@ -20,7 +20,9 @@ reproduces them. Do not change the features, splits, metrics or the common pipel
 The blocks start with scikit-learn defaults plus the common seed; nothing is tuned yet.
 """
 
+import numpy as np
 from sklearn.base import clone
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import PoissonRegressor
 from sklearn.pipeline import Pipeline
@@ -47,24 +49,30 @@ MODELS = {
     # ---- Erik Román Cortez ----
     "random_forest": {
         "owner": "Erik Román Cortez",
-        # Fixed for every run: 100 trees (more barely change the result) and leaves of at
-        # least 50 rows (smooths the noisy counts). n_jobs=-1 uses every CPU core; it changes
-        # the speed, not the result
-        "estimator": RandomForestRegressor(
-            n_estimators=100,
-            min_samples_leaf=50,
-            random_state=RANDOM_STATE,
-            n_jobs=-1,
+        # WAPE rewards the median, but a tree leaf predicts the mean: with skewed counts the
+        # first grid (no transform) over-predicted 66% of validation rows and lost to the
+        # baseline. Training on log(1 + departures) pulls the leaf values toward the median;
+        # predictions come back in departures with exp(x) - 1.
+        # n_jobs=6 instead of -1: same result, less heat on the laptop
+        "estimator": TransformedTargetRegressor(
+            regressor=RandomForestRegressor(
+                n_estimators=100,
+                max_samples=0.05,
+                random_state=RANDOM_STATE,
+                n_jobs=6,
+            ),
+            func=np.log1p,
+            inverse_func=np.expm1,
         ),
         "preprocessing": None,  # trees use the seven features without encoding
-        # 2 x 2 x 2 factorial design, sized on this machine (1.3-2.9 min per fit, < 4 GB):
-        # - max_depth: does extra complexity help or overfit?
-        # - max_samples: bootstrap size per tree; controls cost without subsampling train
-        # - criterion: squared_error versus poisson, made for counts like departures
+        # 2 x 2 x 2 factorial around the log-target forest:
+        # - max_depth: does extra complexity help now?
+        # - max_features: 0.5 forces some splits away from avg_4_weeks (97.8% importance)
+        # - min_samples_leaf: smoothing of the leaf values
         "param_grid": {
-            "model__regressor__max_depth": [12, 18],
-            "model__regressor__max_samples": [0.05, 0.10],
-            "model__regressor__criterion": ["squared_error", "poisson"],
+            "model__regressor__regressor__max_depth": [12, 18],
+            "model__regressor__regressor__max_features": [1.0, 0.5],
+            "model__regressor__regressor__min_samples_leaf": [50, 200],
         },
     },
     # ---- José Emmanuel Vázquez Galán ----
