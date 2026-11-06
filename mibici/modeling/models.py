@@ -47,10 +47,25 @@ MODELS = {
     # ---- Erik Román Cortez ----
     "random_forest": {
         "owner": "Erik Román Cortez",
-        # n_jobs=-1 uses every CPU core; it changes the speed, not the result
-        "estimator": RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=-1),
-        "preprocessing": None,
-        "param_grid": {},
+        # Fixed for every run: 100 trees (more barely change the result) and leaves of at
+        # least 50 rows (smooths the noisy counts). n_jobs=-1 uses every CPU core; it changes
+        # the speed, not the result
+        "estimator": RandomForestRegressor(
+            n_estimators=100,
+            min_samples_leaf=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+        ),
+        "preprocessing": None,  # trees use the seven features without encoding
+        # 2 x 2 x 2 factorial design, sized on this machine (1.3-2.9 min per fit, < 4 GB):
+        # - max_depth: does extra complexity help or overfit?
+        # - max_samples: bootstrap size per tree; controls cost without subsampling train
+        # - criterion: squared_error versus poisson, made for counts like departures
+        "param_grid": {
+            "model__regressor__max_depth": [12, 18],
+            "model__regressor__max_samples": [0.05, 0.10],
+            "model__regressor__criterion": ["squared_error", "poisson"],
+        },
     },
     # ---- José Emmanuel Vázquez Galán ----
     "hgb": {
