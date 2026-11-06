@@ -95,6 +95,17 @@ PROCESSED_ARGS ?=
 processed:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.processed $(PROCESSED_ARGS)
 
+MODEL ?= baseline
+MODE ?= validation
+FINAL ?= 0
+TRAIN_ARGS ?=
+
+## Train MODEL (models.py) on MODE and log to MLflow; MODE=test also needs FINAL=1
+.PHONY: train
+train:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.train \
+		--model $(MODEL) --mode $(MODE) $(if $(filter 1,$(FINAL)),--final,) $(TRAIN_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
