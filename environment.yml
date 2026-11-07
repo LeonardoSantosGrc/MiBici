@@ -10,6 +10,7 @@ dependencies:
   - ipython
   - jupyterlab
   - ipykernel
+  - ipywidgets
   - matplotlib
   - notebook
   - numpy
