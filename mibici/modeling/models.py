@@ -140,11 +140,12 @@ MODELS = {
         # Best on validation (notebook 3.02, section 6): hour × weekday, log(history + 0.1)
         "estimator": PoissonRegressor(alpha=1e-6, max_iter=1000),
         "preprocessing": poisson_preprocessing(interaction="weekday", history_offset=0.1),
-        # Grid of notebook 3.02, section 6 (15 runs, seconds each)
-        "param_grid": {
-            "preprocess__history__log__offset": [0.01, 0.05, 0.1, 0.3, 1.0],
-            "model__regressor__alpha": [1e-6, 1e-4, 1e-2],
-        },
+        # Chosen on validation from the 5 x 3 grid of notebook 3.02, section 6
+        # (preprocess__history__log__offset {0.01, 0.05, 0.1, 0.3, 1.0} x
+        # model__regressor__alpha {1e-6, 1e-4, 1e-2}); its 45 runs are in MLflow (commit
+        # 2ed62ad). Emptied at integration so make train, compare and the registry use only
+        # the chosen configuration
+        "param_grid": {},
     },
     # ---- Erik Román Cortez ----
     "random_forest": {
