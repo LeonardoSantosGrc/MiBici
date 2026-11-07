@@ -5,6 +5,11 @@
 
 Within the same rows both rank models the same way (WAPE = MAE * n / sum(y)). Every model is
 scored with ``evaluate`` so all results are comparable: same metrics, same segments.
+
+``evaluate`` also reports the volume ratio (forecast departures / observed departures), a
+diagnostic of systematic under- or over-forecasting: WAPE can favour a model that forecasts
+far fewer bicycles than leave. It informs the final choice; it is not a candidate rule
+(team decision of 2026-11-07).
 """
 
 import numpy as np
@@ -30,6 +35,19 @@ def wape(y_true, y_pred) -> float:
     if total == 0:
         return float("nan")
     return float(np.abs(y_true - y_pred).sum() / total)
+
+
+def volume_ratio(y_true, y_pred) -> float:
+    """Forecast departures divided by observed departures; NaN when there were none.
+
+    1.0 means the total volume is right; 0.8 means 20 % fewer bicycles were forecast.
+    """
+    y_true, y_pred = _as_arrays(y_true, y_pred)
+    total = y_true.sum()
+    # Same rule as WAPE: without observed departures the ratio is undefined
+    if total == 0:
+        return float("nan")
+    return float(y_pred.sum() / total)
 
 
 def evaluate(rows: pd.DataFrame, y_pred) -> pd.DataFrame:
@@ -64,6 +82,7 @@ def evaluate(rows: pd.DataFrame, y_pred) -> pd.DataFrame:
                 "departures": int(y_true[mask].sum()),
                 "mae": mae(y_true[mask], y_pred[mask]),
                 "wape": wape(y_true[mask], y_pred[mask]),
+                "volume_ratio": volume_ratio(y_true[mask], y_pred[mask]),
             }
         )
     return pd.DataFrame(scores).set_index("segment")
@@ -74,7 +93,7 @@ def flatten_scores(scores: pd.DataFrame) -> dict[str, float]:
     return {
         f"{segment}_{metric}": float(scores.loc[segment, metric])
         for segment in scores.index
-        for metric in ("mae", "wape")
+        for metric in ("mae", "wape", "volume_ratio")
     }
 
 

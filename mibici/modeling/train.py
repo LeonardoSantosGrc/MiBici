@@ -8,14 +8,20 @@ it by segment and log one MLflow run with the baseline scored on the same rows.
 
 Modes (mibici.modeling.splits): ``validation`` for tuning, ``window_june`` and ``window_july``
 for the stability of the best configuration, and ``test`` for the final evaluation, which
-also requires ``--final`` so it is never run by accident. Trained models are not saved yet;
-the best configuration of each model is registered at integration.
+also requires ``--final`` so it is never run by accident.
+
+``--register`` (``REGISTER=1``) saves the fitted pipeline and registers it as a new version of
+``REGISTERED_MODEL_NAME`` in the MLflow Model Registry. It is only allowed for the final
+model (``test`` with ``--final``) and for a single configuration (empty grid); the version
+is tagged with the model, owner and commit. The champion alias is set later, with
+``make champion``, from the comparison on validation and the windows.
 """
 
 import time
 
 from loguru import logger
 import mlflow
+import mlflow.sklearn
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 import typer
@@ -25,6 +31,7 @@ from mibici.config import (
     MLFLOW_TRACKING_URI,
     MODELING_EXPERIMENT_NAME,
     RANDOM_STATE,
+    REGISTERED_MODEL_NAME,
     STATION_HOUR_PATH,
     TARGET,
 )
@@ -37,8 +44,8 @@ from mibici.tracking import TEAM, check_tracking_server, describe_dataset, git_i
 app = typer.Typer()
 
 
-def check_mode(mode: str, final: bool) -> None:
-    """Reject unknown modes, and the test mode unless it is the final evaluation."""
+def check_mode(mode: str, final: bool, register: bool = False) -> None:
+    """Reject unknown modes, the test mode unless final, and registering a non-final model."""
     if mode not in EVALUATION_MODES:
         raise ValueError(f"Unknown evaluation mode {mode!r}; use one of {EVALUATION_MODES}.")
     if mode == "test" and not final:
@@ -46,6 +53,9 @@ def check_mode(mode: str, final: bool) -> None:
             "MODE=test is the final evaluation and is used once. Tune with MODE=validation; "
             "add FINAL=1 only for the final run."
         )
+    # Only the final model (trained on train + validation) goes to the Model Registry
+    if register and not (mode == "test" and final):
+        raise ValueError("REGISTER=1 registers the final model: use it with MODE=test FINAL=1.")
 
 
 def load_modeling_table() -> pd.DataFrame:
@@ -74,12 +84,23 @@ def hyperparameters(pipeline) -> dict[str, str]:
 
 
 def run_training(
-    df: pd.DataFrame, model: str, mode: str, final: bool = False, track: bool = True
+    df: pd.DataFrame,
+    model: str,
+    mode: str,
+    final: bool = False,
+    track: bool = True,
+    register: bool = False,
 ) -> pd.DataFrame:
     """Fit every grid combination of ``model`` on ``mode`` and return one row per run."""
-    check_mode(mode, final)
+    check_mode(mode, final, register)
     if model not in MODELS:
         raise ValueError(f"Unknown model {model!r}; use one of {list(MODELS)}.")
+    grid = list(ParameterGrid(MODELS[model]["param_grid"]))  # [{}] when the grid is empty
+    # One registered version per model: its block must hold a single configuration
+    if register and len(grid) > 1:
+        raise ValueError(f"REGISTER=1 needs a single configuration; {model!r} has {len(grid)}.")
+    if register and not track:
+        raise ValueError("REGISTER=1 needs MLflow tracking (do not use --no-track).")
     train, evaluate_rows = train_eval_masks(df, mode)
     eval_df = df[evaluate_rows]
 
@@ -105,7 +126,6 @@ def run_training(
         dataset = describe_dataset(df, str(STATION_HOUR_PATH), "processed_v1")
 
     results = []
-    grid = list(ParameterGrid(MODELS[model]["param_grid"]))  # [{}] when the grid is empty
     for number, grid_params in enumerate(grid, start=1):
         pipeline = make_model(model).set_params(**grid_params)
         start = time.perf_counter()
@@ -129,6 +149,8 @@ def run_training(
                 # Scores by segment of the model and of the baseline, as a small CSV
                 table = pd.concat({"model": scores, "baseline": baseline_scores}, names=["source"])
                 mlflow.log_text(table.to_csv(), "scores_by_segment.csv")
+                if register:
+                    register_model(pipeline, model, git["git_commit"])
 
         results.append(
             {
@@ -136,13 +158,32 @@ def run_training(
                 **grid_params,
                 "wape": scores.loc["all", "wape"],
                 "mae": scores.loc["all", "mae"],
+                "volume_ratio": scores.loc["all", "volume_ratio"],
                 "baseline_wape": baseline_scores.loc["all", "wape"],
                 "baseline_mae": baseline_scores.loc["all", "mae"],
+                "baseline_volume_ratio": baseline_scores.loc["all", "volume_ratio"],
                 "fit_seconds": round(fit_seconds, 1),
             }
         )
         logger.info(f"{run_name}: WAPE {results[-1]['wape']:.3f} ({fit_seconds:.0f} s)")
     return pd.DataFrame(results).set_index("run")
+
+
+def register_model(pipeline, model: str, git_commit: str) -> None:
+    """Save the fitted pipeline in the active run and register it as a new version."""
+    info = mlflow.sklearn.log_model(
+        pipeline, name="model", registered_model_name=REGISTERED_MODEL_NAME
+    )
+    version = info.registered_model_version
+    # Tags tell which team model, owner and code each version comes from
+    client = mlflow.MlflowClient()
+    for key, value in {
+        "model": model,
+        "owner": MODELS[model]["owner"],
+        "git_commit": git_commit,
+    }.items():
+        client.set_model_version_tag(REGISTERED_MODEL_NAME, version, key, value)
+    logger.info(f"Registered {REGISTERED_MODEL_NAME} version {version} ({model})")
 
 
 @app.command()
@@ -153,17 +194,20 @@ def main(
     ),
     final: bool = typer.Option(False, help="Confirm the final evaluation (required by test)."),
     track: bool = typer.Option(True, help="Log the runs to MLflow (requires `make mlflow`)."),
+    register: bool = typer.Option(
+        False, help="Register the final model in the Model Registry (needs test and --final)."
+    ),
 ) -> None:
     """Train MODEL on MODE for every combination of its grid and log each run to MLflow."""
     # Check the request and the server before the slow part (loading and features)
-    check_mode(mode, final)
+    check_mode(mode, final, register)
     if track:
         check_tracking_server()
         if git_info()["git_dirty"] == "true":
             logger.warning("Uncommitted changes: the MLflow runs will be tagged git_dirty=true")
 
     df = load_modeling_table()
-    results = run_training(df, model, mode, final=final, track=track)
+    results = run_training(df, model, mode, final=final, track=track, register=register)
     # Summary table: one line per run, against the baseline on the same rows
     logger.success(f"{model} on {mode}:\n{results.round(3).to_string()}")
 

@@ -216,3 +216,6 @@ mlartifacts/
 *.db
 *.sqlite
 *.sqlite3
+
+# Forecasts written by `make predict` (regenerated from the registered model)
+/models/predictions/
