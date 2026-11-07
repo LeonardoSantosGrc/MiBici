@@ -55,7 +55,14 @@ MODELS = {
     # ---- José Emmanuel Vázquez Galán ----
     "hgb": {
         "owner": "José Emmanuel Vázquez Galán",
-        "estimator": HistGradientBoostingRegressor(random_state=RANDOM_STATE),
+        "estimator": HistGradientBoostingRegressor(
+            loss="absolute_error",
+            learning_rate=0.10,
+            max_iter=120,
+            max_leaf_nodes=31,
+            early_stopping=False,
+            random_state=RANDOM_STATE,
+        ),
         "preprocessing": None,
         "param_grid": {},
     },
