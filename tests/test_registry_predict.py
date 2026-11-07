@@ -1,17 +1,21 @@
-"""Tests for the champion check, the forecast of one day and the registration guard.
+"""Tests for the champion check, the forecast of one day and model registration.
 
-Pure logic only: no MLflow server and no test split (team decision of 2026-11-07).
+No MLflow server and no test split: registration is checked against a temporary MLflow
+store inside the test folder (added after the first real registration failed, 2026-11-07).
 """
 
+import mlflow
+import mlflow.sklearn
 import numpy as np
 import pandas as pd
 import pytest
 
 from mibici.features import add_history_features
-from mibici.modeling.models import make_model
+from mibici.config import REGISTERED_MODEL_NAME
+from mibici.modeling.models import MODELS, make_model
 from mibici.modeling.predict import predict_day
 from mibici.modeling.registry import check_champion
-from mibici.modeling.train import check_mode
+from mibici.modeling.train import check_mode, register_model
 
 
 def make_comparison() -> pd.DataFrame:
@@ -95,3 +99,31 @@ def test_predict_day_without_history_fails():
     model = make_model("baseline").fit(data, data["departures"])
     with pytest.raises(ValueError, match="no earlier week"):
         predict_day(data, model, "2026-01-02")
+
+
+@pytest.fixture
+def temporary_mlflow(tmp_path):
+    """MLflow store and artifacts in a temporary folder; the real server is never touched."""
+    previous = mlflow.get_tracking_uri()
+    mlflow.set_tracking_uri(f"sqlite:///{tmp_path / 'mlflow.db'}")
+    experiment = mlflow.create_experiment("test", artifact_location=(tmp_path / "art").as_uri())
+    yield experiment
+    mlflow.set_tracking_uri(previous)
+
+
+# Untuned defaults may not converge on this small table; only saving and loading is checked
+@pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
+def test_every_team_model_can_be_registered_and_loaded(temporary_mlflow):
+    # Every block, with its own pieces (common clipping, poisson preprocessing, trees), must
+    # survive save -> register -> load and give the same forecast
+    data = make_table()
+    data = data[data["history_source"] != "none"]  # rows with history, as in training
+    for number, name in enumerate(MODELS, start=1):
+        pipeline = make_model(name).fit(data, data["departures"])
+        with mlflow.start_run(experiment_id=temporary_mlflow):
+            version = register_model(pipeline, name, git_commit="abc1234")
+        assert int(version) == number
+        loaded = mlflow.sklearn.load_model(f"models:/{REGISTERED_MODEL_NAME}/{version}")
+        np.testing.assert_allclose(loaded.predict(data), pipeline.predict(data))
+        tags = mlflow.MlflowClient().get_model_version(REGISTERED_MODEL_NAME, version).tags
+        assert tags == {"model": name, "owner": MODELS[name]["owner"], "git_commit": "abc1234"}
