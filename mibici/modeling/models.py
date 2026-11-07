@@ -23,7 +23,7 @@ The blocks start with scikit-learn defaults plus the common seed; nothing is tun
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
-from sklearn.compose import ColumnTransformer
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import PoissonRegressor
 from sklearn.pipeline import Pipeline
@@ -149,15 +149,42 @@ MODELS = {
     # ---- Erik Román Cortez ----
     "random_forest": {
         "owner": "Erik Román Cortez",
-        # n_jobs=-1 uses every CPU core; it changes the speed, not the result
-        "estimator": RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=-1),
-        "preprocessing": None,
+        # WAPE rewards the median, but a tree leaf predicts the mean: with skewed counts the
+        # first grid (no transform, commit 80ec65b) over-predicted 66% of validation rows and
+        # lost to the baseline (0.718 vs 0.696). Training on log(1 + departures) pulls the
+        # leaf values toward the median; predictions come back in departures with exp(x) - 1.
+        # n_jobs=6 instead of -1: same result, less heat on the laptop
+        "estimator": TransformedTargetRegressor(
+            regressor=RandomForestRegressor(
+                n_estimators=100,
+                max_samples=0.05,
+                max_depth=12,
+                max_features=0.5,
+                min_samples_leaf=50,
+                random_state=RANDOM_STATE,
+                n_jobs=6,
+            ),
+            func=np.log1p,
+            inverse_func=np.expm1,
+        ),
+        "preprocessing": None,  # trees use the seven features without encoding
+        # Chosen on validation from the 2 x 2 x 2 grid of commit ba66bba (max_depth {12, 18} x
+        # max_features {1.0, 0.5} x min_samples_leaf {50, 200}): every configuration scored
+        # WAPE 0.690-0.691 (baseline 0.696). Run 03 is within 0.001 of the best (run 07,
+        # depth 18) with shallower trees, so it is kept by parsimony
         "param_grid": {},
     },
     # ---- José Emmanuel Vázquez Galán ----
     "hgb": {
         "owner": "José Emmanuel Vázquez Galán",
-        "estimator": HistGradientBoostingRegressor(random_state=RANDOM_STATE),
+        "estimator": HistGradientBoostingRegressor(
+            loss="absolute_error",
+            learning_rate=0.10,
+            max_iter=120,
+            max_leaf_nodes=31,
+            early_stopping=False,
+            random_state=RANDOM_STATE,
+        ),
         "preprocessing": None,
         "param_grid": {},
     },

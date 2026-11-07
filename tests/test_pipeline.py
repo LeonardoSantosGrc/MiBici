@@ -113,7 +113,11 @@ def test_every_grid_uses_valid_parameter_names(name):
 
 def test_models_use_the_common_seed():
     for name in ("random_forest", "hgb"):
-        assert MODELS[name]["estimator"].get_params()["random_state"] == RANDOM_STATE
+        # A block may wrap its estimator (e.g. TransformedTargetRegressor), so check every
+        # random_state of the block, including the nested ones (regressor__random_state)
+        params = MODELS[name]["estimator"].get_params()
+        seeds = [value for key, value in params.items() if key.endswith("random_state")]
+        assert seeds and all(seed == RANDOM_STATE for seed in seeds)
 
 
 def test_make_model_returns_independent_pipelines():
