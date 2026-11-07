@@ -64,6 +64,12 @@ SECONDARY_METRIC = "mae"
 RANDOM_STATE = 0
 MODELING_EXPERIMENT_NAME = "mibici-modeling"
 
+# Model Registry: one registered model with one version per team model; the selected
+# version gets the champion alias (team decision of 2026-11-07)
+REGISTERED_MODEL_NAME = "mibici-departures"
+CHAMPION_ALIAS = "champion"
+PREDICTIONS_DIR = MODELS_DIR / "predictions"
+
 # If tqdm is installed, configure loguru with tqdm.write
 # https://github.com/Delgan/loguru/issues/135
 try:

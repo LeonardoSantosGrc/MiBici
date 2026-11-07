@@ -98,13 +98,15 @@ processed:
 MODEL ?= baseline
 MODE ?= validation
 FINAL ?= 0
+REGISTER ?= 0
 TRAIN_ARGS ?=
 
-## Train MODEL (models.py) on MODE and log to MLflow; MODE=test also needs FINAL=1
+## Train MODEL (models.py) on MODE and log to MLflow; MODE=test needs FINAL=1; REGISTER=1 saves it
 .PHONY: train
 train:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.train \
-		--model $(MODEL) --mode $(MODE) $(if $(filter 1,$(FINAL)),--final,) $(TRAIN_ARGS)
+		--model $(MODEL) --mode $(MODE) $(if $(filter 1,$(FINAL)),--final,) \
+		$(if $(filter 1,$(REGISTER)),--register,) $(TRAIN_ARGS)
 
 COMPARE_ARGS ?=
 
@@ -112,6 +114,24 @@ COMPARE_ARGS ?=
 .PHONY: compare
 compare:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.compare $(COMPARE_ARGS)
+
+VERSION ?=
+CHAMPION_ARGS ?=
+
+## Set the champion alias on VERSION of the registered model (refused if not a candidate)
+.PHONY: champion
+champion:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.registry \
+		--version $(VERSION) $(CHAMPION_ARGS)
+
+DATE ?=
+PREDICT_ARGS ?=
+
+## Forecast every station and hour of DATE with the champion -> models/predictions/
+.PHONY: predict
+predict:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.predict \
+		--date $(DATE) $(PREDICT_ARGS)
 
 
 #################################################################################
