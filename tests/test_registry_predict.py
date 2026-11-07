@@ -111,8 +111,15 @@ def temporary_mlflow(tmp_path):
     mlflow.set_tracking_uri(previous)
 
 
-# Untuned defaults may not converge on this small table; only saving and loading is checked
+# Known warnings that only this small test table or the temporary store produce; this test
+# checks saving and loading, not forecast quality:
+# - the untuned defaults may not converge on so few rows;
+# - max_samples=0.05 of the random_forest block draws only a few rows per tree here
+#   (about 566,000 with the real training data);
+# - MLflow's SQLite store uses a SQLAlchemy option marked as deprecated (MLflow internals)
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
+@pytest.mark.filterwarnings("ignore:Using the fractional value max_samples:UserWarning")
+@pytest.mark.filterwarnings("ignore::sqlalchemy.exc.SADeprecationWarning")
 def test_every_team_model_can_be_registered_and_loaded(temporary_mlflow):
     # Every block, with its own pieces (common clipping, poisson preprocessing, trees), must
     # survive save -> register -> load and give the same forecast
