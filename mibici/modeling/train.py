@@ -169,10 +169,17 @@ def run_training(
     return pd.DataFrame(results).set_index("run")
 
 
-def register_model(pipeline, model: str, git_commit: str) -> None:
-    """Save the fitted pipeline in the active run and register it as a new version."""
+def register_model(pipeline, model: str, git_commit: str) -> int:
+    """Save the fitted pipeline in the active run, register it and return its version."""
+    # MLflow's default format (skops) refuses types it does not know, such as the common
+    # NonNegativeRegressor, the poisson preprocessing or sklearn's tree storage. cloudpickle
+    # saves any pipeline; it trusts the file, which is safe here because the team creates and
+    # loads its own models (team decision of 2026-11-07)
     info = mlflow.sklearn.log_model(
-        pipeline, name="model", registered_model_name=REGISTERED_MODEL_NAME
+        pipeline,
+        name="model",
+        registered_model_name=REGISTERED_MODEL_NAME,
+        serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
     )
     version = info.registered_model_version
     # Tags tell which team model, owner and code each version comes from
@@ -184,6 +191,7 @@ def register_model(pipeline, model: str, git_commit: str) -> None:
     }.items():
         client.set_model_version_tag(REGISTERED_MODEL_NAME, version, key, value)
     logger.info(f"Registered {REGISTERED_MODEL_NAME} version {version} ({model})")
+    return version
 
 
 @app.command()
