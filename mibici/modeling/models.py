@@ -50,14 +50,17 @@ MODELS = {
     "random_forest": {
         "owner": "Erik Román Cortez",
         # WAPE rewards the median, but a tree leaf predicts the mean: with skewed counts the
-        # first grid (no transform) over-predicted 66% of validation rows and lost to the
-        # baseline. Training on log(1 + departures) pulls the leaf values toward the median;
-        # predictions come back in departures with exp(x) - 1.
+        # first grid (no transform, commit 80ec65b) over-predicted 66% of validation rows and
+        # lost to the baseline (0.718 vs 0.696). Training on log(1 + departures) pulls the
+        # leaf values toward the median; predictions come back in departures with exp(x) - 1.
         # n_jobs=6 instead of -1: same result, less heat on the laptop
         "estimator": TransformedTargetRegressor(
             regressor=RandomForestRegressor(
                 n_estimators=100,
                 max_samples=0.05,
+                max_depth=12,
+                max_features=0.5,
+                min_samples_leaf=50,
                 random_state=RANDOM_STATE,
                 n_jobs=6,
             ),
@@ -65,15 +68,11 @@ MODELS = {
             inverse_func=np.expm1,
         ),
         "preprocessing": None,  # trees use the seven features without encoding
-        # 2 x 2 x 2 factorial around the log-target forest:
-        # - max_depth: does extra complexity help now?
-        # - max_features: 0.5 forces some splits away from avg_4_weeks (97.8% importance)
-        # - min_samples_leaf: smoothing of the leaf values
-        "param_grid": {
-            "model__regressor__regressor__max_depth": [12, 18],
-            "model__regressor__regressor__max_features": [1.0, 0.5],
-            "model__regressor__regressor__min_samples_leaf": [50, 200],
-        },
+        # Chosen on validation from the 2 x 2 x 2 grid of commit ba66bba (max_depth {12, 18} x
+        # max_features {1.0, 0.5} x min_samples_leaf {50, 200}): every configuration scored
+        # WAPE 0.690-0.691 (baseline 0.696). Run 03 is within 0.001 of the best (run 07,
+        # depth 18) with shallower trees, so it is kept by parsimony
+        "param_grid": {},
     },
     # ---- José Emmanuel Vázquez Galán ----
     "hgb": {
