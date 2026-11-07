@@ -106,6 +106,13 @@ train:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.train \
 		--model $(MODEL) --mode $(MODE) $(if $(filter 1,$(FINAL)),--final,) $(TRAIN_ARGS)
 
+COMPARE_ARGS ?=
+
+## Compare the models' latest clean MLflow runs -> reports/modeling/model_comparison.csv
+.PHONY: compare
+compare:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.compare $(COMPARE_ARGS)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

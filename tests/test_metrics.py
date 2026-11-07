@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mibici.modeling.metrics import evaluate, flatten_scores, mae, wape
+from mibici.modeling.metrics import evaluate, flatten_scores, mae, volume_ratio, wape
 
 
 def test_mae_and_wape_on_known_values():
@@ -32,6 +32,19 @@ def test_wape_is_mae_times_rows_over_departures():
 def test_wape_without_departures_is_undefined():
     # All zeros: there is no volume to compare the error with
     assert math.isnan(wape([0, 0, 0], [1, 0, 2]))
+
+
+def test_volume_ratio_shows_under_forecasting():
+    # Departures 0, 0, 0, 2, 3 (5 in total)
+    y_true = [0, 0, 0, 2, 3]
+    # Forecasting the mean (1 each) gets the total right but has a higher WAPE...
+    assert volume_ratio(y_true, [1, 1, 1, 1, 1]) == 1.0
+    assert wape(y_true, [1, 1, 1, 1, 1]) == pytest.approx(6 / 5)
+    # ...than forecasting the most common value (0), which forecasts no bicycles at all
+    assert volume_ratio(y_true, [0, 0, 0, 0, 0]) == 0.0
+    assert wape(y_true, [0, 0, 0, 0, 0]) == pytest.approx(5 / 5)
+    # Without departures the ratio is undefined, like WAPE
+    assert math.isnan(volume_ratio([0, 0], [1, 1]))
 
 
 def test_empty_input_is_undefined():
@@ -86,8 +99,11 @@ def test_flatten_scores_names_metrics_by_segment():
     assert flat == {
         "all_mae": 0.5,
         "all_wape": 0.25,
+        "all_volume_ratio": 0.75,  # 3 forecast / 4 observed
         "established_stations_mae": 1.0,
         "established_stations_wape": 0.5,
+        "established_stations_volume_ratio": 0.5,
         "new_station_cohort_mae": 0.0,
         "new_station_cohort_wape": 0.0,
+        "new_station_cohort_volume_ratio": 1.0,
     }

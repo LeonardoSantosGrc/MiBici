@@ -136,8 +136,10 @@ def run_training(
                 **grid_params,
                 "wape": scores.loc["all", "wape"],
                 "mae": scores.loc["all", "mae"],
+                "volume_ratio": scores.loc["all", "volume_ratio"],
                 "baseline_wape": baseline_scores.loc["all", "wape"],
                 "baseline_mae": baseline_scores.loc["all", "mae"],
+                "baseline_volume_ratio": baseline_scores.loc["all", "volume_ratio"],
                 "fit_seconds": round(fit_seconds, 1),
             }
         )
