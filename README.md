@@ -185,7 +185,8 @@ validation and on both windows (notebook 3.01, section 7.6).
 | You may change | Do not change |
 |---|---|
 | Your own block in `mibici/modeling/models.py` | `mibici/config.py` (target, features, dates, seed) |
-| Your own notebook | `features.py`, `splits.py`, `baseline.py`, `metrics.py`, `pipeline.py`, `train.py` |
+| Your own notebook | `features.py`, `splits.py`, `baseline.py`, `metrics.py`, `pipeline.py`, `train.py`, `compare.py`, `registry.py`, `predict.py` |
+| | `tests/` and `environment.yml` (shared by everyone) |
 | | Notebook 3.01 and the `baseline` block |
 | | The test split: never use `MODE=test` to choose anything |
 
@@ -208,12 +209,28 @@ Each `make train` run goes to the `mibici-modeling` experiment, named
 | Part | Content |
 |---|---|
 | Parameters | Model, mode, features, target, seed, first and last hour and rows of the training and evaluated sets, every hyperparameter of the estimator and of the preprocessing |
-| Metrics | `<segment>_wape` and `<segment>_mae` of the model and `baseline_<segment>_*` of the baseline on the same rows, plus `fit_seconds` |
+| Metrics | `<segment>_wape`, `<segment>_mae` and `<segment>_volume_ratio` (forecast ÷ observed departures) of the model, the same `baseline_<segment>_*` of the baseline on the same rows, plus `fit_seconds` |
 | Tags | `owner`, `team`, `git_commit`, `git_branch`, `git_dirty` |
 | Inputs and artifacts | `processed_v1` digest and schema; `scores_by_segment.csv` |
 
-Trained models are not saved by `make train`; the best configuration of each model is
-registered at integration.
+#### Comparison, Model Registry and forecasts (integration)
+
+```bash
+make compare COMPARE_ARGS="--commit <hash>"      # table of all models -> reports/modeling/model_comparison.csv
+make train MODEL=<m> MODE=test FINAL=1 REGISTER=1  # final evaluation, once, and a new registered version
+make champion VERSION=<n>                        # alias champion, refused unless that model is a candidate
+make predict DATE=2026-09-30                     # forecasts of the champion -> models/predictions/
+```
+
+| Step | Rule |
+|---|---|
+| `make compare` | Latest run with committed code (`git_dirty=false`) of every model in validation, June and July; never reads the test split. A model is a **candidate** if it beats the baseline WAPE in all three. The volume ratio is shown as a diagnostic, not as a candidate rule |
+| `REGISTER=1` | Only with `MODE=test FINAL=1` and a single configuration (empty grid). Saves the fitted pipeline as a new version of `mibici-departures`, tagged with `model`, `owner` and `git_commit` |
+| `make champion` | Checks the comparison before setting the alias; choosing among several candidates is the team's decision |
+| `make predict` | Loads `mibici-departures@champion` (or `PREDICT_ARGS="--model-uri ..."`); only days present in `processed_v1` |
+
+The champion is chosen with validation and the windows; the test split only reports the
+final performance of each model.
 
 ### What is versioned
 
@@ -278,8 +295,13 @@ Team rules:
 - `3.01-lsg-modeling-contract.ipynb` (Leonardo): audits `processed_v1`, chooses the
   validation strategy, baseline and metrics with evidence, and closes with the modeling
   contract (section 7). Imports the logic from `mibici/`. Requires `make processed`.
-- Reserved for Phase 2 models: `3.02-jedm-poisson`, `3.03-erc-random-forest`,
-  `3.04-jevg-hgb` (see "Workflow for each model owner").
+- Phase 2 models (see "Workflow for each model owner"):
+  - `3.02-jedm-poisson.ipynb` (José Eduardo): preprocessing for a log-link linear model,
+    offset and `alpha` grid, stability and the mean-versus-median diagnosis.
+  - `3.03-erc-random-forest.ipynb` (Erik): grids without and with a `log1p` target,
+    bias diagnosis and stability.
+  - `3.04-jevg-hgb.ipynb` (José Emmanuel): comparison of losses on a sample, official grid
+    and stability.
 
 ## Project Organization
 
@@ -347,8 +369,10 @@ Team rules:
     │   ├── metrics.py          <- MAE, WAPE and evaluation by segment
     │   ├── pipeline.py         <- Common pipeline: feature selection, preprocessing, estimator, clip at 0
     │   ├── models.py           <- One block per model (estimator, preprocessing, grid); owners edit theirs
-    │   ├── train.py            <- `make train`: train, evaluate and log to MLflow
-    │   └── predict.py          <- Code to run model inference with trained models (template)
+    │   ├── train.py            <- `make train`: train, evaluate, log to MLflow and register
+    │   ├── compare.py          <- `make compare`: comparison table and candidate rule from MLflow
+    │   ├── registry.py         <- `make champion`: validated champion alias
+    │   └── predict.py          <- `make predict`: forecasts of one day with the registered model
     │
     └── plots.py                <- Code to create visualizations
 ```
