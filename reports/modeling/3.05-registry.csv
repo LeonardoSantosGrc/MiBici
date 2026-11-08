@@ -1,0 +1,4 @@
+version,model,owner,git_commit,run_id,champion
+1,poisson,José Eduardo De Moraes López,9e0a723,2a4d0a20e6da478693831a9f89c5b232,False
+2,random_forest,Erik Román Cortez,9e0a723,87cfba8be0fe4a0aaa6bac6e7577b078,False
+3,hgb,José Emmanuel Vázquez Galán,9e0a723,3a0e96c6c8c14ec5a8755d675634b1ee,True
