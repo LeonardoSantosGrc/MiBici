@@ -302,6 +302,10 @@ Team rules:
     bias diagnosis and stability.
   - `3.04-jevg-hgb.ipynb` (José Emmanuel): comparison of losses on a sample, official grid
     and stability.
+- `3.05-lsg-model-comparison.ipynb` (Leonardo): final comparison of the three models from
+  MLflow, champion selection, test evaluation, Model Registry and an example forecast.
+  Reads the official runs from MLflow (`make mlflow`) or, without the server, from the
+  copies in `reports/modeling/`.
 
 ## Project Organization
 
