@@ -70,6 +70,20 @@ REGISTERED_MODEL_NAME = "mibici-departures"
 CHAMPION_ALIAS = "champion"
 PREDICTIONS_DIR = MODELS_DIR / "predictions"
 
+# Serving (Entrega Final): the champion is exported once from the Registry into this folder,
+# which is committed to Git so the API and its Docker image run without the MLflow server
+SERVING_DIR = MODELS_DIR / "serving"
+CHAMPION_EXPORT_DIR = SERVING_DIR / "champion"
+EXPORT_METADATA_FILE = "metadata.json"
+# History the API needs to build the features of a day (team decision of 2026-11-19, option B):
+# the parquet is data, so it stays out of Git and every machine builds it from processed_v1;
+# snapshot.json holds its digest and is committed as the reference to compare against
+SNAPSHOT_PATH = SERVING_DIR / "history_snapshot.parquet"
+SNAPSHOT_INFO_PATH = SERVING_DIR / "snapshot.json"
+# First date the API forecasts: the start of the test period, so every served day can be
+# compared with the observed departures. The last one is the day after the data ends (D+1)
+SERVING_FIRST_DATE = "2026-08-01"
+
 # If tqdm is installed, configure loguru with tqdm.write
 # https://github.com/Delgan/loguru/issues/135
 try:

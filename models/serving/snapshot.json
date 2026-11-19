@@ -1,0 +1,9 @@
+{
+  "digest": "66bc9009",
+  "rows": 814240,
+  "stations": 470,
+  "snapshot_start": "2026-07-04",
+  "last_data_date": "2026-09-30",
+  "first_forecast_date": "2026-08-01",
+  "last_forecast_date": "2026-10-01"
+}

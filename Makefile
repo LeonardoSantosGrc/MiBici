@@ -133,6 +133,27 @@ predict:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.predict \
 		--date $(DATE) $(PREDICT_ARGS)
 
+## Export the champion from the Model Registry to models/serving/champion (needs make mlflow)
+.PHONY: export-model
+export-model:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.export_model
+
+SNAPSHOT_ARGS ?=
+
+## Build the API history snapshot, check it against snapshot.json and log it to MLflow
+.PHONY: serving-snapshot
+serving-snapshot:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.snapshot $(SNAPSHOT_ARGS)
+
+API_HOST ?= 127.0.0.1
+API_PORT ?= 8000
+
+## Serve the forecasting API (docs at http://API_HOST:API_PORT/docs); needs make serving-snapshot
+.PHONY: api
+api:
+	conda run --no-capture-output -n $(PROJECT_NAME) uvicorn mibici.serving.app:app \
+		--host $(API_HOST) --port $(API_PORT)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

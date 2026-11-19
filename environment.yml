@@ -13,16 +13,24 @@ dependencies:
   - ipywidgets
   - matplotlib
   - notebook
-  - numpy
-  - pandas
-  - scikit-learn
+  # Pinned to the versions the champion model was saved with (see its requirements.txt)
+  - numpy=2.5.4
+  - pandas=3.1.0
+  - scikit-learn=1.9.1
   - ruff
   - pytest
   - python-dotenv
   - mkdocs
   - requests
   - beautifulsoup4
-  - mlflow
+  # Pinned: the champion was saved with it and the Registry database uses its schema
+  - mlflow=3.17.2
   - seaborn
+  # Model serving: web framework, ASGI server and HTTP client used by the API tests
+  - fastapi
+  - uvicorn
+  - httpx
+  # Drift statistics (Kolmogorov-Smirnov test)
+  - scipy
   - pip:
     - -e .

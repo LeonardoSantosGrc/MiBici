@@ -219,3 +219,7 @@ mlartifacts/
 
 # Forecasts written by `make predict` (regenerated from the registered model)
 /models/predictions/
+
+# History snapshot for the API: data, rebuilt with `make serving-snapshot` (its digest is in
+# models/serving/snapshot.json, which is committed)
+/models/serving/history_snapshot.parquet
