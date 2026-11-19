@@ -28,9 +28,9 @@ If the model or the snapshot cannot be loaded, the service does not start.
 | Endpoint | Method | Request | Response | Errors |
 |---|---|---|---|---|
 | `/health` | GET | — | `status`, `model_loaded`, `model_version`, `first_forecast_date`, `last_forecast_date` | 503 if the model is not loaded |
-| `/forecast` | POST | `{"date": "2026-10-01"}` or `{"date": "2026-10-01", "station_id": 2}` | See below | 422 invalid request or date outside the range; 404 station not active that day; 503 model not loaded |
+| `/predict` | POST | `{"date": "2026-10-01"}` or `{"date": "2026-10-01", "station_id": 2}` | See below | 422 invalid request or date outside the range; 404 station not active that day; 503 model not loaded |
 
-`/forecast` response:
+`/predict` response:
 
 | Field | Meaning |
 |---|---|
@@ -61,7 +61,7 @@ refreshing the data up to the day before it; that is future work, not part of th
 One log line per forecast:
 
 ```text
-forecast request_id=<id> date=<date> station=<id|None> model_version=3 rows=9340 latency_ms=61.1
+predict request_id=<id> date=<date> station=<id|None> model_version=3 rows=9340 latency_ms=61.1
 ```
 
 ## Tests already in place (`tests/test_serving_api.py`, 13 tests)

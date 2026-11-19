@@ -8,7 +8,7 @@ the history snapshot (``MIBICI_SNAPSHOT_PATH``, built with ``make serving-snapsh
 only selects the rows of its date and calls the model's own pipeline: the API never
 re-implements a feature or a transformation.
 
-Endpoints: ``GET /health`` and ``POST /forecast``. Each forecast writes one log line with its
+Endpoints: ``GET /health`` and ``POST /predict``. Each forecast writes one log line with its
 request id, date, model version, rows and latency.
 """
 
@@ -110,8 +110,8 @@ def create_app(
             last_forecast_date=state.next_day.date(),
         )
 
-    @app.post("/forecast", response_model=ForecastResponse)
-    def forecast(body: ForecastRequest, request: Request) -> ForecastResponse:
+    @app.post("/predict", response_model=ForecastResponse)
+    def predict(body: ForecastRequest, request: Request) -> ForecastResponse:
         """Forecast departures of every active station (or one) and service hour of a day."""
         start = time.perf_counter()
         request_id = uuid.uuid4().hex  # random id that links the response and the log line
@@ -137,7 +137,7 @@ def create_app(
         stations = to_stations(rows, predictions)
         latency_ms = round((time.perf_counter() - start) * 1000, 1)
         logger.info(
-            f"forecast request_id={request_id} date={body.date} station={body.station_id} "
+            f"predict request_id={request_id} date={body.date} station={body.station_id} "
             f"model_version={state.model_info.version} rows={len(rows)} latency_ms={latency_ms}"
         )
         return ForecastResponse(

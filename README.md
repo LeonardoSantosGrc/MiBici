@@ -238,13 +238,13 @@ final performance of each model.
 make export-model       # champion from the Registry -> models/serving/champion/ (DGX only; in Git)
 make serving-snapshot   # history the API needs -> models/serving/history_snapshot.parquet
 make api                # http://127.0.0.1:8000/docs
-curl -X POST http://127.0.0.1:8000/forecast -H "Content-Type: application/json" -d '{"date": "2026-10-01"}'
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d '{"date": "2026-10-01"}'
 ```
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /health` | Model loaded, its version and the dates it can forecast |
-| `POST /forecast` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date |
+| `POST /predict` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date |
 
 The API forecasts from 2026-08-01 (observed departures exist to compare) to 2026-10-01, the
 day after the latest data (a real D+1 forecast); other dates get a 422 that states the range.

@@ -38,7 +38,7 @@ Serving and drift share only the model and the seven contract features
 | History snapshot (Jul 4 to Sep 30, 2026) | `models/serving/history_snapshot.parquet` (outside Git) | `make serving-snapshot` |
 | Snapshot reference digest | `models/serving/snapshot.json` (in Git) | Written by the first `make serving-snapshot` |
 | Feature table and D+1 rows | `mibici/serving/snapshot.py` | — |
-| API: `GET /health`, `POST /forecast` | `mibici/serving/app.py`, `schemas.py` | `make api` |
+| API: `GET /health`, `POST /predict` | `mibici/serving/app.py`, `schemas.py` | `make api` |
 | Tests | `tests/test_serving_export.py`, `test_serving_snapshot.py`, `test_serving_api.py` | `make test` |
 
 ## Getting started on a team machine

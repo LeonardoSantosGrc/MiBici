@@ -50,7 +50,7 @@ def test_health_without_a_loaded_model_is_unavailable():
 
 
 def test_forecast_of_a_past_day_has_every_station_and_hour(client):
-    response = client.post("/forecast", json={"date": "2026-08-01"})
+    response = client.post("/predict", json={"date": "2026-08-01"})
     assert response.status_code == 200
     body = response.json()
 
@@ -68,7 +68,7 @@ def test_forecast_of_a_past_day_has_every_station_and_hour(client):
 
 
 def test_forecast_of_the_next_day_is_flagged(client):
-    response = client.post("/forecast", json={"date": NEXT_DAY})
+    response = client.post("/predict", json={"date": NEXT_DAY})
     assert response.status_code == 200
     assert response.json()["is_next_day"] is True
 
@@ -78,24 +78,24 @@ def test_api_returns_what_the_registered_pipeline_predicts(client, snapshot):
     rows = day_rows(build_feature_table(snapshot), "2026-08-10")
     expected = mlflow.sklearn.load_model(str(CHAMPION_EXPORT_DIR)).predict(rows)
 
-    body = client.post("/forecast", json={"date": "2026-08-10"}).json()
+    body = client.post("/predict", json={"date": "2026-08-10"}).json()
     served = [hour["predicted_departures"] for s in body["stations"] for hour in s["hours"]]
     np.testing.assert_allclose(served, expected, atol=0.001)  # the API rounds to 3 decimals
 
 
 def test_forecast_of_one_station(client):
-    body = client.post("/forecast", json={"date": "2026-08-01", "station_id": 2}).json()
+    body = client.post("/predict", json={"date": "2026-08-01", "station_id": 2}).json()
     assert [station["station_id"] for station in body["stations"]] == [2]
 
 
 def test_station_not_active_that_day_is_not_found(client):
     # Station 2 opens on July 20
-    response = client.post("/forecast", json={"date": FIRST_DATE, "station_id": 2})
+    response = client.post("/predict", json={"date": FIRST_DATE, "station_id": 2})
     assert response.status_code == 404
 
 
 def test_date_outside_the_range_explains_which_dates_exist(client):
-    response = client.post("/forecast", json={"date": "2026-11-20"})
+    response = client.post("/predict", json={"date": "2026-11-20"})
     assert response.status_code == 422
     assert f"from {FIRST_DATE} to {NEXT_DAY}" in response.json()["detail"]
 
@@ -111,4 +111,4 @@ def test_date_outside_the_range_explains_which_dates_exist(client):
     ],
 )
 def test_invalid_requests_are_refused(client, payload):
-    assert client.post("/forecast", json=payload).status_code == 422
+    assert client.post("/predict", json=payload).status_code == 422

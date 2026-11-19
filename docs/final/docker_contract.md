@@ -58,8 +58,8 @@ make docker-run      # docker run --rm -p 8000:8000 --name mibici-api mibici-api
 | Build | Succeeds on the DGX (ARM64) and on your machine |
 | Start | `docker ps` shows the container as `healthy` |
 | `GET /health` from the host | `model_version` = 3, forecast range 2026-08-01 to 2026-10-01 |
-| `POST /forecast {"date": "2026-09-30"}` from the host | `total_predicted_departures` = 11795.739 (same as `make predict`) |
-| `POST /forecast {"date": "2026-10-01"}` from the host | `total_predicted_departures` = 13307.735 |
+| `POST /predict {"date": "2026-09-30"}` from the host | `total_predicted_departures` = 11795.739 (same as `make predict`) |
+| `POST /predict {"date": "2026-10-01"}` from the host | `total_predicted_departures` = 13307.735 |
 | Absolute path in `MLmodel` | The file stores a DGX path (`artifact_path`); confirm the model loads from `/app/models/serving/champion` anyway |
 | Image size and build time | Reported in the PR |
 
