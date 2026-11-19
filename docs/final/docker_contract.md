@@ -88,12 +88,38 @@ Write the image URL and its tags in the README (Docker section) and in the PR.
 ## Integration test
 
 `tests/test_docker_integration.py`: calls a running container at the URL given by the
-environment variable `MIBICI_API_URL` (for example `http://127.0.0.1:8000`) and checks
-`/health` and both totals above. It is skipped when the variable is not set, so `make test`
-keeps working without Docker.
+environment variable `MIBICI_API_URL` (for example `http://127.0.0.1:8000`) and checks:
+
+| Check | Expected |
+|---|---|
+| `/health` | Status `ok`, `model_version` = 3, forecast range 2026-08-01 to 2026-10-01 |
+| `/predict` for 2026-09-30 and 2026-10-01 | Every station and hour equals the forecast computed on the host from `models/serving/champion` and the local snapshot (`build_feature_table` + `model.predict`): maximum absolute difference ≤ 0.001 (the API rounds to 3 decimals) |
+| Totals | 11795.739 and 13307.735 |
+
+It is skipped when the variable is not set, so `make test` keeps working without Docker.
+
+## Reproducibility in a clean environment (required by the assignment)
+
+The assignment asks to show that the same model gives the same results in an environment
+different from the one where it was trained. The container is that environment: no conda,
+only `requirements-serving.txt`, the code, the exported model and the snapshot. Training used
+fixed seeds (`RANDOM_STATE = 0` in `mibici/config.py`); inference is deterministic.
+
+Run the integration test against each environment and report the results in the PR and in
+`reports/evidence/final_docker/reproducibility.csv`, with the columns `environment`,
+`machine`, `architecture`, `total_2026_09_30`, `total_2026_10_01` and `max_abs_diff_vs_host`:
+
+| Environment (one row each) | Reference values |
+|---|---|
+| Conda environment on the DGX, ARM64 | The reference: 11795.739, 13307.735, difference 0 |
+| Local image `mibici-api:1.0.0` on the DGX, ARM64 | Must match the reference |
+| Local image `mibici-api:1.0.0` on your machine, x86 | Must match the reference |
+| Published image pulled from DockerHub on a machine that did not build it | Must match the reference |
+
+Leave a row out only if that machine is not available, and say so in the PR.
 
 ## Evidence
 
 `reports/evidence/final_docker/`: build output, `docker images` (size), `docker ps` with
-`healthy`, the requests from the host, and the DockerHub page showing both tags and
-architectures.
+`healthy`, the requests from the host, `reproducibility.csv`, and the DockerHub page showing
+both tags and architectures.

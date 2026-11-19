@@ -66,6 +66,31 @@ the real data and its derivation shown in the notebook; no arbitrary values.
 
 Use `mibici.config.RANDOM_STATE` for every random step.
 
+## Performance against the baseline (required by the assignment)
+
+Every scenario and level is scored for two models on the same rows:
+
+| Model | How |
+|---|---|
+| Champion | `mlflow.sklearn.load_model("models/serving/champion").predict(rows)` |
+| Baseline | `make_model("baseline")` (`FourWeekAverageBaseline`, it returns `avg_4_weeks`), the reference of the candidate rule in Phase 2 |
+
+This shows whether the champion still beats the baseline under drift. Example: in S3 the
+champion reads the broken `t_168`, while the baseline only uses `avg_4_weeks`.
+
+## Alert criteria and proposed action (required by the assignment)
+
+| Signal | Threshold | Why this threshold | Proposed action |
+|---|---|---|---|
+| Data contract | Any monitored feature missing, negative or outside its domain (hours 0 and 5 to 23, `day_of_week` 0 to 6) | Same rules as `build_feature_table` | **Review the feature pipeline** before scoring (expected in S3) |
+| Data drift | PSI > 0.25 on any monitored feature, or on the prediction | Industry convention for a strong shift | **Investigate**: confirm with performance once observed departures arrive |
+| Performance | Champion WAPE ≥ baseline WAPE on the same rows | The champion was promoted because it beat the baseline (Phase 2 candidate rule; on the test period 0.6066 vs 0.6227). Losing that advantage removes the reason it is in production | **Retrain** with recent data (expected in S1 and S2) |
+| Performance without data drift | Champion WAPE rises against the natural current period (0.6066) while every PSI < 0.1 | The inputs did not change, so the relation between inputs and departures did | **Review the model inputs**: add information the model lacks, such as weather or events (expected in S4) |
+
+Report each scenario and level with the alerts it raised and the action, and compare them
+with the expected column above: a scenario that does not raise its expected alert is a
+finding, not a failure to hide.
+
 ## Code and outputs
 
 | Piece | Location |
@@ -75,7 +100,8 @@ Use `mibici.config.RANDOM_STATE` for every random step.
 | Command | `make drift` |
 | Notebook (reads, validates, explains) | `notebooks/4.01-jedm-drift-evaluation.ipynb` |
 | Drift table | `reports/evidence/final_drift/drift_by_feature.csv`: scenario, level, feature, psi, ks_d, status |
-| Performance table | `reports/evidence/final_drift/performance_by_segment.csv`: scenario, level, segment, wape, mae, volume_ratio, and the change against the natural current period |
+| Performance table | `reports/evidence/final_drift/performance_by_segment.csv`: scenario, level, model (champion or baseline), segment, wape, mae, volume_ratio, and the change against the natural current period |
+| Alert table | `reports/evidence/final_drift/alerts.csv`: scenario, level, data_contract_alert, data_drift_alert, performance_alert, action |
 | Figures | `reports/evidence/final_drift/` |
 
 ## Tests (`tests/test_drift.py`)
@@ -87,6 +113,7 @@ Use `mibici.config.RANDOM_STATE` for every random step.
 | Scenarios with the same seed | Identical output |
 | Control (bootstrap of the reference) | PSI < 0.1 for every feature |
 | Strong S1 | PSI > 0.25 on `avg_4_weeks` |
-| Performance table | WAPE and MAE computable for every scenario and segment |
+| Performance table | WAPE and MAE computable for every scenario, model and segment |
+| Alert rules | Each rule fires on a small table built to cross its threshold and stays quiet on the control |
 
 Tests use small synthetic tables, like the rest of the test suite.
