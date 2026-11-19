@@ -1,0 +1,76 @@
+# Docker contract
+
+**Owner:** José Emmanuel Vázquez Galán · **Branch:** `feat/final-docker`
+
+## Purpose
+
+Run the forecasting API in a container that works the same on the DGX (ARM64) and on x86
+machines, without the MLflow server and without the project data.
+
+## Image
+
+| Item | Contract |
+|---|---|
+| Base image | `python:3.12-slim` (published for ARM64 and x86) |
+| Working directory | `/app` |
+| Dependencies | `pip install -r requirements-serving.txt` (new file at the repository root) |
+| Project package | The pickle references `mibici.modeling.pipeline`, so `mibici/` must be importable: copy it to `/app/mibici` and set `PYTHONPATH=/app` (or `pip install --no-deps .`, which also needs `pyproject.toml` and `README.md`) |
+| Files to copy | `mibici/`, `models/serving/champion/`, `models/serving/history_snapshot.parquet` (and `pyproject.toml`, `README.md` if the package is installed) |
+| Never copy | `data/`, `mlflow/`, `notebooks/`, `reports/`, `.git/`, `.env` (list them in `.dockerignore`) |
+| Environment | `MIBICI_MODEL_URI=/app/models/serving/champion`, `MIBICI_SNAPSHOT_PATH=/app/models/serving/history_snapshot.parquet` |
+| Command | `uvicorn mibici.serving.app:app --host 0.0.0.0 --port 8000` |
+| Port | `8000` (`EXPOSE 8000`) |
+| Health check | `HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"` (the slim image has no `curl`) |
+
+The history snapshot is not in Git: run `make serving-snapshot` before building and check that
+it prints `matches the reference`.
+
+## Dependencies (`requirements-serving.txt`)
+
+Pin the versions the champion was saved with (from `models/serving/champion/requirements.txt`)
+plus what the API imports:
+
+| Package | Version | Why |
+|---|---|---|
+| `scikit-learn` | `1.9.1` | Unpickles the pipeline |
+| `pandas` | `3.1.0` | Rows and features |
+| `numpy` | `2.5.4` | Arrays |
+| `scipy` | `1.18.1` | scikit-learn dependency |
+| `cloudpickle` | `3.1.2` | Format of `model.pkl` |
+| `mlflow` | `3.17.2` | `mlflow.sklearn.load_model`; trying `mlflow-skinny==3.17.2` to make the image smaller is welcome if the model still loads |
+| `pyarrow` | Same as the conda environment | Reads the snapshot parquet |
+| `fastapi`, `uvicorn` | Same as the conda environment | The service |
+| `loguru`, `python-dotenv`, `tqdm`, `typer`, `requests` | Same as the conda environment | Imported by `mibici.config`, `mibici.tracking` and `mibici.serving.snapshot` |
+
+Get the environment versions with `conda list -n mibici`.
+
+## Make targets
+
+```text
+make docker-build    # docker build -t mibici-api:final .
+make docker-run      # docker run --rm -p 8000:8000 --name mibici-api mibici-api:final
+```
+
+## Checks
+
+| Check | Expected |
+|---|---|
+| Build | Succeeds on the DGX (ARM64) and on your machine |
+| Start | `docker ps` shows the container as `healthy` |
+| `GET /health` from the host | `model_version` = 3, forecast range 2026-08-01 to 2026-10-01 |
+| `POST /forecast {"date": "2026-09-30"}` from the host | `total_predicted_departures` = 11795.739 (same as `make predict`) |
+| `POST /forecast {"date": "2026-10-01"}` from the host | `total_predicted_departures` = 13307.735 |
+| Absolute path in `MLmodel` | The file stores a DGX path (`artifact_path`); confirm the model loads from `/app/models/serving/champion` anyway |
+| Image size and build time | Reported in the PR |
+
+## Integration test
+
+`tests/test_docker_integration.py`: calls a running container at the URL given by the
+environment variable `MIBICI_API_URL` (for example `http://127.0.0.1:8000`) and checks
+`/health` and both totals above. It is skipped when the variable is not set, so `make test`
+keeps working without Docker.
+
+## Evidence
+
+`reports/evidence/final_docker/`: build output, `docker images` (size), `docker ps` with
+`healthy`, and the requests from the host.

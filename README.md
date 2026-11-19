@@ -232,6 +232,26 @@ make predict DATE=2026-09-30                     # forecasts of the champion -> 
 The champion is chosen with validation and the windows; the test split only reports the
 final performance of each model.
 
+### Entrega Final: serving the champion
+
+```bash
+make export-model       # champion from the Registry -> models/serving/champion/ (DGX only; in Git)
+make serving-snapshot   # history the API needs -> models/serving/history_snapshot.parquet
+make api                # http://127.0.0.1:8000/docs
+curl -X POST http://127.0.0.1:8000/forecast -H "Content-Type: application/json" -d '{"date": "2026-10-01"}'
+```
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Model loaded, its version and the dates it can forecast |
+| `POST /forecast` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date |
+
+The API forecasts from 2026-08-01 (observed departures exist to compare) to 2026-10-01, the
+day after the latest data (a real D+1 forecast); other dates get a 422 that states the range.
+It loads the exported model and the history snapshot once at startup and computes features
+with the same `add_history_features` used in training. Contracts for serving, Docker and drift
+are in [`docs/final/`](docs/final/README.md).
+
 ### What is versioned
 
 | Path | Git | How it is produced |
@@ -246,6 +266,8 @@ final performance of each model.
 | `reports/1.02-erc-atypical-days.csv` | Yes | Notebook 1.02 (atypical days, reused by notebook 1.04) |
 | `reports/evidence/` | Yes | Manual screenshots for the deliverable (e.g. MLflow) |
 | `mlflow/` | No | `make mlflow` (local Tracking Server state) |
+| `models/serving/champion/`, `models/serving/snapshot.json` | Yes | `make export-model` (exported champion and its `metadata.json`); `make serving-snapshot` (snapshot reference digest) |
+| `models/serving/history_snapshot.parquet` | No | `make serving-snapshot` (from `processed_v1`) |
 | `reports/figures/` | Yes | By running the notebooks |
 | `notebooks/` | Yes, with outputs | Can be re-run to regenerate them |
 
