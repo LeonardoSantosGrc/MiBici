@@ -24,5 +24,11 @@ dependencies:
   - beautifulsoup4
   - mlflow
   - seaborn
+  # Model serving: web framework, ASGI server and HTTP client used by the API tests
+  - fastapi
+  - uvicorn
+  - httpx
+  # Drift statistics (Kolmogorov-Smirnov test)
+  - scipy
   - pip:
     - -e .
