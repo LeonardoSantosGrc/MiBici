@@ -70,6 +70,12 @@ REGISTERED_MODEL_NAME = "mibici-departures"
 CHAMPION_ALIAS = "champion"
 PREDICTIONS_DIR = MODELS_DIR / "predictions"
 
+# Serving (Entrega Final): the champion is exported once from the Registry into this folder,
+# which is committed to Git so the API and its Docker image run without the MLflow server
+SERVING_DIR = MODELS_DIR / "serving"
+CHAMPION_EXPORT_DIR = SERVING_DIR / "champion"
+EXPORT_METADATA_FILE = "metadata.json"
+
 # If tqdm is installed, configure loguru with tqdm.write
 # https://github.com/Delgan/loguru/issues/135
 try:

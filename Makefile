@@ -133,6 +133,11 @@ predict:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.modeling.predict \
 		--date $(DATE) $(PREDICT_ARGS)
 
+## Export the champion from the Model Registry to models/serving/champion (needs make mlflow)
+.PHONY: export-model
+export-model:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.export_model
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
