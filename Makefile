@@ -138,6 +138,11 @@ predict:
 export-model:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.export_model
 
+## Build the API history snapshot from processed_v1 and check it against snapshot.json
+.PHONY: serving-snapshot
+serving-snapshot:
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.snapshot
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
