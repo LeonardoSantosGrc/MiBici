@@ -47,9 +47,30 @@ Get the environment versions with `conda list -n mibici`.
 ## Make targets
 
 ```text
-make docker-build    # docker build -t mibici-api:final .
-make docker-run      # docker run --rm -p 8000:8000 --name mibici-api mibici-api:final
+make docker-build    # docker build -t mibici-api:1.0.0 .
+make docker-run      # docker run --rm -p 8000:8000 --name mibici-api mibici-api:1.0.0
 ```
+
+## Publishing on DockerHub (required by the assignment)
+
+The final PDF must link to the published image. Publish it from your DockerHub account, so
+anyone can run the service with one command and without the repository.
+
+| Item | Contract |
+|---|---|
+| Repository | `<your-dockerhub-user>/mibici-api`, public |
+| Tags | `1.0.0` (champion version 3, snapshot `66bc9009`; never overwritten) and `latest` (points to the newest version) |
+| Architectures | `linux/amd64` and `linux/arm64` under the same tag, built with `docker buildx` (most machines are x86; the DGX is ARM64) |
+| Login | `docker login` with a DockerHub access token, not the account password; never commit the token |
+| Version rule | A new champion or snapshot gets a new tag (`1.1.0`, …); published tags are not replaced |
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t <your-dockerhub-user>/mibici-api:1.0.0 -t <your-dockerhub-user>/mibici-api:latest --push .
+docker run --rm -p 8000:8000 <your-dockerhub-user>/mibici-api:1.0.0   # check the published image
+```
+
+Write the image URL and its tags in the README (Docker section) and in the PR.
 
 ## Checks
 
@@ -62,6 +83,7 @@ make docker-run      # docker run --rm -p 8000:8000 --name mibici-api mibici-api
 | `POST /predict {"date": "2026-10-01"}` from the host | `total_predicted_departures` = 13307.735 |
 | Absolute path in `MLmodel` | The file stores a DGX path (`artifact_path`); confirm the model loads from `/app/models/serving/champion` anyway |
 | Image size and build time | Reported in the PR |
+| Published image | `docker run` of `<your-dockerhub-user>/mibici-api:1.0.0` on a machine that did not build it gives the same totals |
 
 ## Integration test
 
@@ -73,4 +95,5 @@ keeps working without Docker.
 ## Evidence
 
 `reports/evidence/final_docker/`: build output, `docker images` (size), `docker ps` with
-`healthy`, and the requests from the host.
+`healthy`, the requests from the host, and the DockerHub page showing both tags and
+architectures.

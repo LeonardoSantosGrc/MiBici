@@ -18,7 +18,7 @@ cd MiBici
 make setup              # create or update the conda environment and register the "Python (mibici)" kernel
 conda activate mibici
 
-make test               # pytest
+make test               # whole test suite (same as: pytest -q)
 make lint               # ruff
 
 make data               # download the official CSV files to data/raw/ and build references/data_manifest.csv
@@ -245,6 +245,15 @@ curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -
 |---|---|
 | `GET /health` | Model loaded, its version and the dates it can forecast |
 | `POST /predict` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date |
+
+Served model artifact:
+
+| Item | Value |
+|---|---|
+| Registry URI | `models:/mibici-departures/3` (alias `models:/mibici-departures@champion`) |
+| Model | HistGradientBoostingRegressor (`hgb`), run `3a0e96c6c8c14ec5a8755d675634b1ee`, trained at commit `9e0a723` |
+| Exported copy the API loads | `models/serving/champion/` (its `metadata.json` repeats the identity above) |
+| History snapshot | `models/serving/history_snapshot.parquet`, digest `66bc9009` (`models/serving/snapshot.json`) |
 
 The API forecasts from 2026-08-01 (observed departures exist to compare) to 2026-10-01, the
 day after the latest data (a real D+1 forecast); other dates get a 422 that states the range.
