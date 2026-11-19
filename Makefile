@@ -143,6 +143,15 @@ export-model:
 serving-snapshot:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.snapshot
 
+API_HOST ?= 127.0.0.1
+API_PORT ?= 8000
+
+## Serve the forecasting API (docs at http://API_HOST:API_PORT/docs); needs make serving-snapshot
+.PHONY: api
+api:
+	conda run --no-capture-output -n $(PROJECT_NAME) uvicorn mibici.serving.app:app \
+		--host $(API_HOST) --port $(API_PORT)
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
