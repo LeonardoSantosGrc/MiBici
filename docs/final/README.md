@@ -35,7 +35,7 @@ Serving and drift share only the model and the seven contract features
 | Piece | Location | Command |
 |---|---|---|
 | Champion export (version 3, `hgb`) and `metadata.json` | `models/serving/champion/` (in Git) | `make export-model` (only where the Registry lives) |
-| History snapshot (Jul 4 to Sep 30, 2026) | `models/serving/history_snapshot.parquet` (outside Git) | `make serving-snapshot` |
+| History snapshot (Jul 4 to Sep 30, 2026) | `models/serving/history_snapshot.parquet` (outside Git; versioned in MLflow as `build_serving_snapshot_v1`) | `make serving-snapshot` (`SNAPSHOT_ARGS="--no-track"` without the MLflow server) |
 | Snapshot reference digest | `models/serving/snapshot.json` (in Git) | Written by the first `make serving-snapshot` |
 | Feature table and D+1 rows | `mibici/serving/snapshot.py` | — |
 | API: `GET /health`, `POST /predict` | `mibici/serving/app.py`, `schemas.py` | `make api` |
@@ -47,7 +47,7 @@ Serving and drift share only the model and the seven contract features
 git switch main && git pull
 git switch -c feat/final-<topic>
 make requirements          # environment with the pinned model versions
-make serving-snapshot      # needs data/processed/station_hour_v1.parquet; must print "matches the reference"
+make serving-snapshot SNAPSHOT_ARGS="--no-track"   # needs processed_v1; must print "matches the reference"
 make test
 make api                   # http://127.0.0.1:8000/docs
 ```

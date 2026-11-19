@@ -236,7 +236,7 @@ final performance of each model.
 
 ```bash
 make export-model       # champion from the Registry -> models/serving/champion/ (DGX only; in Git)
-make serving-snapshot   # history the API needs -> models/serving/history_snapshot.parquet
+make serving-snapshot   # history the API needs -> models/serving/history_snapshot.parquet + MLflow run
 make api                # http://127.0.0.1:8000/docs
 curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d '{"date": "2026-10-01"}'
 ```
@@ -276,7 +276,7 @@ are in [`docs/final/`](docs/final/README.md).
 | `reports/evidence/` | Yes | Manual screenshots for the deliverable (e.g. MLflow) |
 | `mlflow/` | No | `make mlflow` (local Tracking Server state) |
 | `models/serving/champion/`, `models/serving/snapshot.json` | Yes | `make export-model` (exported champion and its `metadata.json`); `make serving-snapshot` (snapshot reference digest) |
-| `models/serving/history_snapshot.parquet` | No | `make serving-snapshot` (from `processed_v1`) |
+| `models/serving/history_snapshot.parquet` | No (versioned in MLflow: run `build_serving_snapshot_v1` of `mibici-datasets`) | `make serving-snapshot` (from `processed_v1`) |
 | `reports/figures/` | Yes | By running the notebooks |
 | `notebooks/` | Yes, with outputs | Can be re-run to regenerate them |
 

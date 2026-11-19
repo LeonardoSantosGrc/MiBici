@@ -138,10 +138,12 @@ predict:
 export-model:
 	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.export_model
 
-## Build the API history snapshot from processed_v1 and check it against snapshot.json
+SNAPSHOT_ARGS ?=
+
+## Build the API history snapshot, check it against snapshot.json and log it to MLflow
 .PHONY: serving-snapshot
 serving-snapshot:
-	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.snapshot
+	conda run --no-capture-output -n $(PROJECT_NAME) python -m mibici.serving.snapshot $(SNAPSHOT_ARGS)
 
 API_HOST ?= 127.0.0.1
 API_PORT ?= 8000

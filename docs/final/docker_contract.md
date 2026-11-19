@@ -22,8 +22,8 @@ machines, without the MLflow server and without the project data.
 | Port | `8000` (`EXPOSE 8000`) |
 | Health check | `HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"` (the slim image has no `curl`) |
 
-The history snapshot is not in Git: run `make serving-snapshot` before building and check that
-it prints `matches the reference`.
+The history snapshot is not in Git: run `make serving-snapshot SNAPSHOT_ARGS="--no-track"`
+before building and check that it prints `matches the reference`.
 
 ## Dependencies (`requirements-serving.txt`)
 

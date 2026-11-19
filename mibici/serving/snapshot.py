@@ -1,6 +1,11 @@
 """History snapshot and feature table the API uses to forecast a whole day from its date.
 
-    make serving-snapshot
+    make serving-snapshot                                   # also logs it to MLflow
+    make serving-snapshot SNAPSHOT_ARGS="--no-track"        # without the MLflow server
+
+Each tracked run is ``build_serving_snapshot_v1`` in the ``mibici-datasets`` experiment, with
+the parquet and ``snapshot.json`` as artifacts, so the dataset snapshot the deployed model uses
+is versioned next to the model in MLflow.
 
 The model needs ``avg_4_weeks`` and ``t_168``, which come from earlier weeks of departures. The
 snapshot keeps the rows of processed_v1 from ``HISTORY_WEEKS`` weeks before
@@ -23,15 +28,19 @@ import typer
 from mibici.config import (
     FEATURES,
     HISTORY_WEEKS,
+    PROJ_ROOT,
     SERVING_FIRST_DATE,
     SNAPSHOT_INFO_PATH,
     SNAPSHOT_PATH,
     STATION_HOUR_PATH,
 )
 from mibici.features import WEEK, add_history_features
-from mibici.tracking import dataframe_digest
+from mibici.tracking import check_tracking_server, dataframe_digest, git_info, log_dataset_run
 
 app = typer.Typer()
+
+# Name of this dataset version in MLflow (mibici-datasets experiment)
+SNAPSHOT_VERSION = "serving_snapshot_v1"
 
 # Columns the snapshot keeps: keys, target and the inputs that are not history features
 SNAPSHOT_COLUMNS = [
@@ -139,8 +148,19 @@ def check_reference(info: dict, reference_path: Path) -> bool:
 
 
 @app.command()
-def main() -> None:
+def main(
+    track: bool = typer.Option(
+        True, help="Log this snapshot version to MLflow (requires `make mlflow`)."
+    ),
+) -> None:
     """Build the history snapshot from processed_v1 and check it against snapshot.json."""
+    # Commit of the code that runs, taken before anything is written
+    if track:
+        check_tracking_server()
+        git = git_info()
+        if git["git_dirty"] == "true":
+            logger.warning("Uncommitted changes: the MLflow run will be tagged git_dirty=true")
+
     # processed_v1 as built in Phase 1; the snapshot keeps base columns only
     snapshot = build_snapshot(pd.read_parquet(STATION_HOUR_PATH))
     # Building the features once proves the snapshot is enough for every served date
@@ -151,6 +171,26 @@ def main() -> None:
     info = snapshot_info(snapshot)
     created = check_reference(info, SNAPSHOT_INFO_PATH)
     status = "reference created" if created else "matches the reference"
+
+    if track:
+        # Unlike interim and processed, this run uploads the data itself: the snapshot is a
+        # small serving artifact (about 1 MB) and the assignment asks to version the dataset
+        # snapshot the deployed model uses (team decision of 2026-11-19, G6)
+        log_dataset_run(
+            run_name=f"build_{SNAPSHOT_VERSION}",
+            tags={"pipeline_stage": "serving", "dataset_version": SNAPSHOT_VERSION, **git},
+            params={
+                "snapshot_start": info["snapshot_start"],
+                "last_data_date": info["last_data_date"],
+                "first_forecast_date": info["first_forecast_date"],
+                "last_forecast_date": info["last_forecast_date"],
+                "history_weeks": HISTORY_WEEKS,
+                "source": str(STATION_HOUR_PATH.relative_to(PROJ_ROOT)),
+            },
+            metrics={"rows": info["rows"], "stations": info["stations"]},
+            artifacts=[SNAPSHOT_PATH, SNAPSHOT_INFO_PATH],
+            datasets={SNAPSHOT_VERSION: (snapshot, str(SNAPSHOT_PATH))},
+        )
     logger.success(
         f"Snapshot {info['digest']} ({info['rows']:,} rows, {status}): forecasts from "
         f"{info['first_forecast_date']} to {info['last_forecast_date']} -> {SNAPSHOT_PATH}"
