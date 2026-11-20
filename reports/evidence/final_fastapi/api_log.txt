@@ -1,0 +1,21 @@
+conda run --no-capture-output -n mibici uvicorn mibici.serving.app:app \
+	--host 127.0.0.1 --port 8000
+2026-11-20 08:10:15.719 -06:00 | INFO     | mibici.config:<module>:12 - PROJ_ROOT path is: /home/user/mlops/MiBici
+INFO:     Started server process [1391]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[32m2026-11-20 08:10:20.272 -06:00[0m | [1mINFO    [0m | [36mmibici.serving.app[0m:[36mlifespan[0m:[36m118[0m - [1mModel /home/user/mlops/MiBici/models/serving/champion (version 3) and 577,480 feature rows ready[0m
+INFO:     127.0.0.1:34714 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34720 - "GET /model-info HTTP/1.1" 200 OK
+[32m2026-11-20 08:14:38.042 -06:00[0m | [1mINFO    [0m | [36mmibici.serving.app[0m:[36mpredict[0m:[36m218[0m - [1mpredict request_id=54372e0c45884608aaeb95524d07b775 date=2026-10-01 station=2 model_version=3 rows=20 latency_ms=40.6[0m
+INFO:     127.0.0.1:34736 - "POST /predict HTTP/1.1" 200 OK
+[32m2026-11-20 08:14:38.067 -06:00[0m | [1mINFO    [0m | [36mmibici.serving.app[0m:[36mpredict[0m:[36m218[0m - [1mpredict request_id=f594b9f50edf4ebf93992ed79952bd67 date=2026-09-30 station=2 model_version=3 rows=20 latency_ms=14.2[0m
+INFO:     127.0.0.1:34738 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34746 - "POST /predict HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:34754 - "POST /predict HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58358 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58358 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53888 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53888 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48076 - "GET /model-info HTTP/1.1" 200 OK
