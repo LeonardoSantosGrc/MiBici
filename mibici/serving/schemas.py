@@ -5,6 +5,7 @@ dates get a 422 before any code runs) and uses them to document the API at ``/do
 """
 
 import datetime as dt
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +32,11 @@ class HourForecast(BaseModel):
 
     hour_start: dt.datetime = Field(description="Start of the hour, local time (Guadalajara).")
     predicted_departures: float = Field(ge=0)
+    observed_departures: float | None = Field(
+        default=None,
+        ge=0,
+        description="Departures that actually happened, for a past day; null for the next day.",
+    )
 
 
 class StationForecast(BaseModel):
@@ -38,6 +44,9 @@ class StationForecast(BaseModel):
 
     station_id: int
     total_predicted_departures: float = Field(ge=0)
+    total_observed_departures: float | None = Field(
+        default=None, ge=0, description="Observed departures of the day; null for the next day."
+    )
     hours: list[HourForecast]
 
 
@@ -64,7 +73,37 @@ class ForecastResponse(BaseModel):
     )
     model: ModelInfo
     total_predicted_departures: float = Field(ge=0)
+    total_observed_departures: float | None = Field(
+        default=None,
+        ge=0,
+        description="Observed departures of all returned stations and hours; null for the next "
+        "day.",
+    )
     stations: list[StationForecast]
+
+
+class ModelDetails(BaseModel):
+    """Everything a client needs to know about the served model before calling /predict."""
+
+    # Allow a field named model_uri (Pydantic reserves some names that start with "model_")
+    model_config = ConfigDict(protected_namespaces=())
+
+    model_uri: str = Field(description="Where the service loaded the model from.")
+    metadata: dict[str, Any] = Field(
+        description="Full metadata.json of the exported model (version, run, commits, export "
+        "time); empty if the model was loaded straight from a models:/ URI."
+    )
+    features: list[str] = Field(description="Input features of the model, in pipeline order.")
+    service_hours: list[int] = Field(description="Hours of the day the service forecasts.")
+    first_forecast_date: dt.date
+    last_forecast_date: dt.date = Field(description="The day after the latest data (D+1).")
+
+
+class ErrorResponse(BaseModel):
+    """Body of an unexpected error (500)."""
+
+    detail: str
+    request_id: str = Field(description="Same id as the X-Request-ID header and the log line.")
 
 
 class HealthResponse(BaseModel):

@@ -4,12 +4,15 @@ The real champion (models/serving/champion, committed to Git) is loaded, so thes
 check that the deployable artifact works; the history comes from the processed_table fixture.
 """
 
-import numpy as np
+import re
+
 from fastapi.testclient import TestClient
+from loguru import logger
 import mlflow.sklearn
+import numpy as np
 import pytest
 
-from mibici.config import CHAMPION_EXPORT_DIR
+from mibici.config import CHAMPION_EXPORT_DIR, FEATURES
 from mibici.serving.app import create_app
 from mibici.serving.snapshot import build_feature_table, build_snapshot, day_rows
 
@@ -112,3 +115,106 @@ def test_date_outside_the_range_explains_which_dates_exist(client):
 )
 def test_invalid_requests_are_refused(client, payload):
     assert client.post("/predict", json=payload).status_code == 422
+
+
+# ---- /model-info -------------------------------------------------------------------------
+
+
+def test_model_info_describes_the_served_model(client):
+    response = client.get("/model-info")
+    assert response.status_code == 200
+    body = response.json()
+    # Full metadata.json of the export, not only the fields of ModelInfo
+    assert body["metadata"]["version"] == 3 and body["metadata"]["model"] == "hgb"
+    assert "exported_at" in body["metadata"] and "training_git_commit" in body["metadata"]
+    assert body["model_uri"] == str(CHAMPION_EXPORT_DIR)
+    assert body["features"] == FEATURES
+    assert body["service_hours"] == [0, 8]  # the hours of the processed_table fixture
+    assert body["first_forecast_date"] == FIRST_DATE
+    assert body["last_forecast_date"] == NEXT_DAY
+
+
+def test_model_info_without_a_loaded_model_is_unavailable():
+    response = TestClient(create_app()).get("/model-info")
+    assert response.status_code == 503
+
+
+# ---- X-Request-ID header -----------------------------------------------------------------
+
+
+def test_forecast_header_and_body_share_the_request_id(client):
+    response = client.post("/predict", json={"date": "2026-08-01"})
+    assert response.headers["X-Request-ID"] == response.json()["request_id"]
+
+
+def test_every_response_has_its_own_request_id(client):
+    first = client.get("/health").headers["X-Request-ID"]
+    second = client.get("/health").headers["X-Request-ID"]
+    assert re.fullmatch(r"[0-9a-f]{32}", first)
+    assert first != second
+
+
+@pytest.mark.parametrize(
+    ("payload", "status"),
+    [
+        ({"date": "2026-11-20"}, 422),  # date outside the range
+        ({"date": "tomorrow"}, 422),  # invalid request
+        ({"date": FIRST_DATE, "station_id": 2}, 404),  # station not active that day
+    ],
+)
+def test_error_responses_also_carry_the_request_id(client, payload, status):
+    response = client.post("/predict", json=payload)
+    assert response.status_code == status
+    assert re.fullmatch(r"[0-9a-f]{32}", response.headers["X-Request-ID"])
+
+
+# ---- Unexpected errors -------------------------------------------------------------------
+
+
+class BrokenModel:
+    """Stands in for the champion and fails, to simulate a bug during a forecast."""
+
+    def predict(self, rows):
+        raise RuntimeError("simulated failure")
+
+
+def test_unexpected_error_answers_500_with_the_request_id_and_logs_it(client):
+    client.app.state.model = BrokenModel()
+    messages = []
+    sink = logger.add(messages.append, level="ERROR")  # capture what the service logs
+    try:
+        response = client.post("/predict", json={"date": "2026-08-01"})
+    finally:
+        logger.remove(sink)
+
+    assert response.status_code == 500
+    body = response.json()
+    request_id = response.headers["X-Request-ID"]
+    assert body["request_id"] == request_id
+    assert "simulated failure" not in body["detail"]  # the client never sees the traceback
+    # The log has the id and the real error, so the id leads to the cause
+    assert any(request_id in message and "simulated failure" in message for message in messages)
+
+
+# ---- Observed departures -----------------------------------------------------------------
+
+
+def test_past_day_includes_the_observed_departures(client, snapshot):
+    body = client.post("/predict", json={"date": "2026-08-01"}).json()
+    day = snapshot[snapshot["hour_start"].dt.normalize() == "2026-08-01"]
+
+    served = [hour["observed_departures"] for s in body["stations"] for hour in s["hours"]]
+    expected = day.sort_values(["station_id", "hour_start"])["departures"].tolist()
+    assert served == expected
+    assert body["total_observed_departures"] == float(day["departures"].sum())
+    for station in body["stations"]:
+        observed = sum(hour["observed_departures"] for hour in station["hours"])
+        assert station["total_observed_departures"] == observed
+
+
+def test_next_day_has_no_observed_departures(client):
+    body = client.post("/predict", json={"date": NEXT_DAY}).json()
+    assert body["total_observed_departures"] is None
+    for station in body["stations"]:
+        assert station["total_observed_departures"] is None
+        assert all(hour["observed_departures"] is None for hour in station["hours"])
