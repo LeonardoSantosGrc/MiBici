@@ -1,0 +1,8 @@
+HTTP/1.1 422 Unprocessable Entity
+date: Fri, 20 Nov 2026 14:14:37 GMT
+server: uvicorn
+content-length: 165
+content-type: application/json
+x-request-id: 5f844895af2846339494e54a858ca68c
+
+{"detail":"Forecasts are available from 2026-08-01 to 2026-10-01 (the day after the latest data). To forecast 2026-11-20, refresh the data up to the day before it."}

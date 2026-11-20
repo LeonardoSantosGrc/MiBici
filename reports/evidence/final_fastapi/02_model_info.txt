@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+date: Fri, 20 Nov 2026 14:14:37 GMT
+server: uvicorn
+content-length: 849
+content-type: application/json
+x-request-id: b8cf3661ee6f4b0d99812d83b283f2e3
+
+{"model_uri":"/home/user/mlops/MiBici/models/serving/champion","metadata":{"registered_model":"mibici-departures","alias":"champion","version":3,"model_id":"m-87c5a525c54d49b5848f259660ada2cc","run_id":"3a0e96c6c8c14ec5a8755d675634b1ee","model":"hgb","owner":"José Emmanuel Vázquez Galán","training_git_commit":"9e0a723b39dbcdb83f8a9bba3e2dc5a4dc48b082","export_git_commit":"c444751181c2c60a0931222ad214eb9d9d8e7b6e","export_git_dirty":"false","exported_at":"2026-11-19T16:36:35+00:00","mlflow_version":"3.17.2","features":["hour","day_of_week","is_weekend","month","station_age_days","avg_4_weeks","t_168"]},"features":["hour","day_of_week","is_weekend","month","station_age_days","avg_4_weeks","t_168"],"service_hours":[0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],"first_forecast_date":"2026-08-01","last_forecast_date":"2026-10-01"}

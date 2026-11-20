@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+date: Fri, 20 Nov 2026 14:14:37 GMT
+server: uvicorn
+content-length: 122
+content-type: application/json
+x-request-id: 1021ed9ef91b4a629118e5c44cc6d2aa
+
+{"status":"ok","model_loaded":true,"model_version":3,"first_forecast_date":"2026-08-01","last_forecast_date":"2026-10-01"}

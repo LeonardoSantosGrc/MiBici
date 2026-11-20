@@ -244,7 +244,20 @@ curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -
 | Endpoint | Purpose |
 |---|---|
 | `GET /health` | Model loaded, its version and the dates it can forecast |
-| `POST /predict` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date |
+| `GET /model-info` | Full `metadata.json` of the served model, its seven input features, service hours and forecast range |
+| `POST /predict` | Departures of every active station (or one, with `station_id`) for the 20 service hours of a date; past days also return the observed departures |
+
+Every response carries an `X-Request-ID` header (32 hex characters). `/predict` repeats it in
+`request_id` and in its log line; an unexpected error answers 500 with the same id instead of a
+traceback, so a client can quote it and the log leads to the cause.
+
+```bash
+curl -s http://127.0.0.1:8000/model-info
+curl -s -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+     -d '{"date": "2026-09-30", "station_id": 2}'   # past day: observed departures included
+curl -s -i -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+     -d '{"date": "2026-11-20"}'                    # 422 with the available range, X-Request-ID header
+```
 
 Served model artifact:
 
