@@ -28,20 +28,27 @@ If the model or the snapshot cannot be loaded, the service does not start.
 | Endpoint | Method | Request | Response | Errors |
 |---|---|---|---|---|
 | `/health` | GET | — | `status`, `model_loaded`, `model_version`, `first_forecast_date`, `last_forecast_date` | 503 if the model is not loaded |
-| `/predict` | POST | `{"date": "2026-10-01"}` or `{"date": "2026-10-01", "station_id": 2}` | See below | 422 invalid request or date outside the range; 404 station not active that day; 503 model not loaded |
+| `/model-info` | GET | — | `model_uri`, `metadata` (full `metadata.json`), `features`, `service_hours`, `first_forecast_date`, `last_forecast_date` | 503 if the model is not loaded |
+| `/predict` | POST | `{"date": "2026-10-01"}` or `{"date": "2026-10-01", "station_id": 2}` | See below | 422 invalid request or date outside the range; 404 station not active that day; 503 model not loaded; 500 unexpected error |
+
+Every response, errors included, carries an `X-Request-ID` header with a new random id (32 hex
+characters). An unexpected error answers 500 with `{"detail": ..., "request_id": ...}` (the
+same id as the header) and logs the full traceback with that id; the traceback never reaches
+the client.
 
 `/predict` response:
 
 | Field | Meaning |
 |---|---|
-| `request_id` | Random id (32 hex characters), also written to the log |
+| `request_id` | Random id (32 hex characters), also in the `X-Request-ID` header and the log |
 | `generated_at` | UTC time of the forecast |
 | `latency_ms` | Time spent building the answer |
 | `date` | Requested date |
 | `is_next_day` | `true` for the day after the latest data (a real forecast); `false` for an earlier day, whose observed departures exist |
 | `model` | `registered_model`, `version`, `model`, `run_id`, `training_git_commit` |
 | `total_predicted_departures` | Sum over all returned stations and hours |
-| `stations[]` | `station_id`, `total_predicted_departures`, `hours[]` with `hour_start` (local time) and `predicted_departures` (rounded to 3 decimals, never negative) |
+| `total_observed_departures` | Observed departures of the returned stations and hours for a past day; `null` for D+1 |
+| `stations[]` | `station_id`, `total_predicted_departures`, `total_observed_departures`, `hours[]` with `hour_start` (local time), `predicted_departures` (rounded to 3 decimals, never negative) and `observed_departures` (`null` for D+1) |
 
 ## Data contract
 
@@ -64,12 +71,38 @@ One log line per forecast:
 predict request_id=<id> date=<date> station=<id|None> model_version=3 rows=9340 latency_ms=61.1
 ```
 
-## Tests already in place (`tests/test_serving_api.py`, 13 tests)
+An unexpected error writes one ERROR line with the traceback:
 
-Health with the real champion; health without a model (503); a full past day (every station
-and hour, no negative values, consistent total, model identity, telemetry fields); D+1 flag;
-the API returns exactly what the registered pipeline predicts; one station; inactive station
-(404); date outside the range (422 with the range); five invalid requests (422).
+```text
+error request_id=<id> method=POST path=/predict
+```
+
+## Usage examples
+
+```bash
+make api   # http://127.0.0.1:8000/docs (Swagger UI, generated from the Pydantic schemas)
+
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/model-info
+curl -s -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+     -d '{"date": "2026-10-01"}'                       # D+1: real forecast, observed = null
+curl -s -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+     -d '{"date": "2026-09-30", "station_id": 2}'      # past day, one station, with observed
+curl -s -i -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+     -d '{"date": "2026-11-20"}'                       # 422 with the range; -i shows X-Request-ID
+```
+
+## Tests (`tests/test_serving_api.py`, 23 tests)
+
+Base (13): health with the real champion; health without a model (503); a full past day (every
+station and hour, no negative values, consistent total, model identity, telemetry fields); D+1
+flag; the API returns exactly what the registered pipeline predicts; one station; inactive
+station (404); date outside the range (422 with the range); five invalid requests (422).
+
+Added in `feat/final-fastapi` (10): `/model-info` content and 503 without a model; header and
+body share the request id; every response gets its own id; 422 and 404 responses carry the
+header; an unexpected error answers 500 with the id, hides the traceback and logs both; observed
+departures of a past day match the snapshot (per hour, per station and in total); D+1 has none.
 
 ## Left for Erik
 
