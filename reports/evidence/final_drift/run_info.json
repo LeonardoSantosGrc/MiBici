@@ -1,0 +1,15 @@
+{
+  "git_commit": "7880446b8addcd162b460578056806543820c4d9",
+  "git_branch": "feat/final-drift",
+  "git_dirty": "false",
+  "model": "models\\serving\\champion",
+  "reference_period": [
+    "2026-06-01",
+    "2026-08-01"
+  ],
+  "current_period": [
+    "2026-08-01",
+    "2026-10-01"
+  ],
+  "random_state": 0
+}
