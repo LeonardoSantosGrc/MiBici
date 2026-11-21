@@ -1,0 +1,19 @@
+=== IMAGE ===
+IMAGE              ID             DISK USAGE   CONTENT SIZE   EXTRA
+mibici-api:1.0.0   1876e5972407       1.29GB          292MB   U
+
+=== IMAGE INSPECT ===
+ID=sha256:1876e5972407f5f01934a511848876f2ccc99947697b6f516308aae01d88c679 OS=linux ARCH=amd64
+
+=== CONTAINER ===
+CONTAINER ID   IMAGE              COMMAND                  CREATED          STATUS                    PORTS                                         NAMES
+72e43a2e963b   mibici-api:1.0.0   "uvicorn mibici.serv…"   42 minutes ago   Up 42 minutes (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   mibici-api
+
+=== CONTAINER INSPECT ===
+Image=sha256:1876e5972407f5f01934a511848876f2ccc99947697b6f516308aae01d88c679 Status=running Health=healthy
+
+=== HEALTH ===
+{"status":"ok","model_loaded":true,"model_version":3,"first_forecast_date":"2026-08-01","last_forecast_date":"2026-10-01"}
+
+=== MODEL INFO ===
+{"model_uri":"/app/models/serving/champion","metadata":{"registered_model":"mibici-departures","alias":"champion","version":3,"model_id":"m-87c5a525c54d49b5848f259660ada2cc","run_id":"3a0e96c6c8c14ec5a8755d675634b1ee","model":"hgb","owner":"José Emmanuel Vázquez Galán","training_git_commit":"9e0a723b39dbcdb83f8a9bba3e2dc5a4dc48b082","export_git_commit":"c444751181c2c60a0931222ad214eb9d9d8e7b6e","export_git_dirty":"false","exported_at":"2026-11-19T16:36:35+00:00","mlflow_version":"3.17.2","features":["hour","day_of_week","is_weekend","month","station_age_days","avg_4_weeks","t_168"]},"features":["hour","day_of_week","is_weekend","month","station_age_days","avg_4_weeks","t_168"],"service_hours":[0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],"first_forecast_date":"2026-08-01","last_forecast_date":"2026-10-01"}

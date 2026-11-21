@@ -224,3 +224,24 @@ mlflow:
 		--backend-store-uri sqlite:///$(MLFLOW_DIR)/backend/mlflow.db \
 		--default-artifact-root $(MLFLOW_DIR)/artifacts \
 		--host 127.0.0.1 --port $(MLFLOW_PORT)
+
+#################################################################################
+# Final delivery: containerized model serving (Jose Emmanuel)
+#################################################################################
+
+DOCKER_IMAGE ?= mibici-api:1.0.0
+DOCKER_CONTAINER ?= mibici-api
+
+.PHONY: docker-build docker-run docker-test
+
+## Build the local image with the exported HGB champion and serving snapshot
+docker-build:
+	docker build --tag $(DOCKER_IMAGE) .
+
+## Run the container; API documentation is available on port 8000
+docker-run:
+	docker run --rm --publish 8000:8000 --name $(DOCKER_CONTAINER) $(DOCKER_IMAGE)
+
+## Test a running Docker API against host predictions
+docker-test:
+	MIBICI_API_URL=$${MIBICI_API_URL:-http://127.0.0.1:8000} $(PYTHON_INTERPRETER) -m pytest -q tests/test_docker_integration.py

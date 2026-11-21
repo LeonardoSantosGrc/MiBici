@@ -1,0 +1,2 @@
+environment,machine,architecture,total_2026_09_30,total_2026_10_01,max_abs_diff_vs_host
+local-image,WSL2-PC,linux/amd64,11795.739,13307.735,0.000499
