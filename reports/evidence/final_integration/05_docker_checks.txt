@@ -1,0 +1,31 @@
+Docker image built from main 86b87d6 on the DGX (linux/arm64), 2026-11-21
+
+make docker-build (last lines):
+
+#17 exporting to image
+#17 exporting layers 0.1s done
+#17 writing image sha256:8516e08e2f7964827a576b9cb436d56ab99c3c1894d80dc2bec3fa27d2aaab35 done
+#17 naming to docker.io/library/mibici-api:1.0.0 done
+#17 DONE 0.1s
+
+docker image ls / inspect:
+mibici-api:1.0.0 8516e08e2f79 960MB
+OS=linux ARCH=arm64
+
+docker ps (container started with docker run --publish 8000:8000 --name mibici-api mibici-api:1.0.0):
+mibici-api:1.0.0 | Up 6 seconds (healthy) | 0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+
+make docker-test (tests/test_docker_integration.py against the container):
+4 passed in 1.27s
+
+Published image pulled without login on the DGX:
+joseemmanuelvg/mibici-api:1.0.0 ARCH=arm64 digest=joseemmanuelvg/mibici-api@sha256:65924163acf84ceb67fe651ec62867d00cb907ccf145e33f122cf2f684589e17
+joseemmanuelvg/mibici-api:latest digest=joseemmanuelvg/mibici-api@sha256:65924163acf84ceb67fe651ec62867d00cb907ccf145e33f122cf2f684589e17
+Integration test against the published image: 4 passed
+
+Reproducibility (reports/evidence/final_docker/reproducibility.csv):
+environment,machine,architecture,total_2026_09_30,total_2026_10_01,max_abs_diff_vs_host
+local-image,WSL2-PC,linux/amd64,11795.739,13307.735,0.000499
+conda-env-api,DGX-Spark,linux/arm64,11795.739,13307.735,0.000499
+local-image-from-main,DGX-Spark,linux/arm64,11795.739,13307.735,0.000499
+published-image,DGX-Spark,linux/arm64,11795.739,13307.735,0.000499

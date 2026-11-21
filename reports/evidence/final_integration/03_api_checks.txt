@@ -1,0 +1,27 @@
+API served with make api from main 86b87d6 on the DGX (linux/arm64), 2026-11-21
+Request -> HTTP status (from the saved responses)
+GET /health -> 200
+GET /model-info -> 200
+POST /predict {"date":"2026-09-30"} -> 200
+POST /predict {"date":"2026-10-01"} -> 200
+POST /predict {"date":"2026-10-01","station_id":2} -> 200
+POST /predict {"date":"2026-11-20"} -> 422
+POST /predict {"date":"2026-09-30","station_id":99999} -> 404
+POST /predict {"date":"tomorrow"} -> 422
+GET /docs -> 200
+
+Response summary:
+OpenAPI: 3.1.0 | title: MiBici departures forecast 1.0.0 | paths: ['/health', '/model-info', '/predict']
+health: {'status': 'ok', 'model_loaded': True, 'model_version': 3, 'first_forecast_date': '2026-08-01', 'last_forecast_date': '2026-10-01'}
+model-info: version 3 hgb | uri models/serving/champion
+predict_2026-09-30: stations 467 hours 9340 total 11795.739 observed 20858.0 min 0.0 next_day False version 3 latency_ms 75.0
+predict_2026-10-01: stations 467 hours 9340 total 13307.735 observed None min 0.0 next_day True version 3 latency_ms 86.2
+predict_station_2: stations 1 hours 20 total 60.426 observed None min 0.0 next_day True version 3 latency_ms 9.9
+out_of_range: {'detail': 'Forecasts are available from 2026-08-01 to 2026-10-01 (the day after the latest data). To forecast 2026-11-20, refresh the data 
+unknown_station: {'detail': 'Station 99999 is not active on 2026-09-30.'}
+invalid_request: {'detail': [{'type': 'date_from_datetime_parsing', 'loc': ['body', 'date'], 'msg': 'Input should be a valid date or datetime, input is too s
+
+Telemetry lines in the server log:
+06:00 | INFO     | mibici.serving.app:predict:218 - predict request_id=3cb8770c027a4fc680cc5b75b4904bc8 date=2026-09-30 station=None model_version=3 rows=9340 latency_ms=75.0
+06:00 | INFO     | mibici.serving.app:predict:218 - predict request_id=65a3a2c8320f44fbb4b95b1b36ecf29d date=2026-10-01 station=None model_version=3 rows=9340 latency_ms=86.2
+06:00 | INFO     | mibici.serving.app:predict:218 - predict request_id=43df48232f6c421aa25e51b76226dde9 date=2026-10-01 station=2 model_version=3 rows=20 latency_ms=9.9

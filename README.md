@@ -6,6 +6,28 @@
 
 MLOps project for analyzing, preparing, versioning, and modeling MiBici open mobility data.
 
+## Contents
+
+- [Quick start (team)](#quick-start-team)
+  - [Data preparation (interim layer)](#data-preparation-interim-layer)
+  - [Station × hour base (`make station-hour`)](#station--hour-base-make-station-hour)
+  - [Modeling dataset: `processed_v1` (`make processed`)](#modeling-dataset-processed_v1-make-processed)
+  - [Phase 2: modeling](#phase-2-modeling)
+    - [Modeling contract](#modeling-contract)
+    - [How the pieces fit](#how-the-pieces-fit)
+    - [Evaluation modes](#evaluation-modes)
+    - [Workflow for each model owner](#workflow-for-each-model-owner)
+  - [MLflow](#mlflow)
+    - [Comparison, Model Registry and forecasts (integration)](#comparison-model-registry-and-forecasts-integration)
+  - [Entrega Final: serving the champion](#entrega-final-serving-the-champion)
+  - [Entrega Final: Docker image](#entrega-final-docker-image)
+  - [Entrega Final: data drift monitoring](#entrega-final-data-drift-monitoring)
+  - [What is versioned](#what-is-versioned)
+  - [Notebooks](#notebooks)
+    - [Naming a notebook](#naming-a-notebook)
+    - [Current notebooks](#current-notebooks)
+- [Project Organization](#project-organization)
+
 ## Quick start (team)
 
 Data is not versioned in Git: everything under `data/` and the derived artifacts in
@@ -274,6 +296,60 @@ It loads the exported model and the history snapshot once at startup and compute
 with the same `add_history_features` used in training. Contracts for serving, Docker and drift
 are in [`docs/final/`](docs/final/README.md).
 
+### Entrega Final: Docker image
+
+The service runs in a container that needs neither the MLflow server nor the project data:
+the image holds the code, the exported champion and the history snapshot. It is published on
+DockerHub, so it runs with one command and without cloning the repository.
+
+| Item | Value |
+|---|---|
+| Image | [`joseemmanuelvg/mibici-api`](https://hub.docker.com/r/joseemmanuelvg/mibici-api) (public) |
+| Tag `1.0.0` | Champion version 3 (`hgb`) and history snapshot `66bc9009`; never overwritten |
+| Tag `latest` | Points to the newest version (today the same image as `1.0.0`) |
+| Architectures | `linux/amd64` and `linux/arm64` under the same tag; Docker picks the right one |
+| Base and command | `python:3.12-slim`, non-root user, `uvicorn mibici.serving.app:app --host 0.0.0.0 --port 8000` |
+
+Run the published image:
+
+```bash
+docker pull joseemmanuelvg/mibici-api:1.0.0
+docker run --rm -p 8000:8000 joseemmanuelvg/mibici-api:1.0.0   # http://127.0.0.1:8000/docs
+```
+
+Build and test it from the repository (needs `make serving-snapshot` first):
+
+```bash
+make docker-build    # local image mibici-api:1.0.0
+make docker-run      # serves on port 8000
+make docker-test     # (another terminal, mibici environment active) compares every station and
+                     # hour of the container with the forecast computed on the host
+```
+
+A new champion or snapshot gets a new tag (`1.1.0`, …); published tags are not replaced.
+Implementation details: [`docs/final/docker_implementation.md`](docs/final/docker_implementation.md).
+
+### Entrega Final: data drift monitoring
+
+```bash
+make drift           # -> reports/evidence/final_drift/ (about 20 s; no MLflow server needed)
+```
+
+Compares the inputs of August–September 2026 and of synthetic scenarios (demand shift, station
+expansion, data failure, concept change; three levels each, calibrated from the data) with
+June–July 2026, and scores the champion and the baseline on the same rows. Outputs:
+
+| File | Content |
+|---|---|
+| `drift_by_feature.csv` | PSI and Kolmogorov–Smirnov D of every feature and of the prediction, per scenario and level |
+| `performance_by_segment.csv` | WAPE, MAE and volume ratio of champion and baseline by segment, and the change against the unperturbed period |
+| `alerts.csv` | The four alert signals (data contract, data drift, performance, performance without drift) and the proposed action |
+| `calibration.csv` | Magnitude of every scenario and level, derived from the data |
+| Figures | PSI heatmap and WAPE by scenario |
+
+Rules and thresholds: [`docs/final/drift_contract.md`](docs/final/drift_contract.md); analysis
+in notebook `4.01-jedm-drift-evaluation.ipynb`.
+
 ### What is versioned
 
 | Path | Git | How it is produced |
@@ -350,6 +426,12 @@ Team rules:
   MLflow, champion selection, test evaluation, Model Registry and an example forecast.
   Reads the official runs from MLflow (`make mlflow`) or, without the server, from the
   copies in `reports/modeling/`.
+- `3.06-lsg-split-bias-and-variability.ipynb` (Leonardo): possible biases of the chronological
+  split (seasonal coverage, demand growth, stations unseen in training, events) and a paired
+  bootstrap of the champion-vs-baseline WAPE difference on the test period. Requires
+  `make processed`.
+- `4.01-jedm-drift-evaluation.ipynb` (José Eduardo): data drift and performance drift of the
+  champion on synthetic scenarios, alerts and proposed actions (`make drift`).
 
 ## Project Organization
 

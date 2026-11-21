@@ -6,7 +6,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mibici.modeling.metrics import evaluate, flatten_scores, mae, volume_ratio, wape
+from mibici.modeling.metrics import (
+    evaluate,
+    flatten_scores,
+    mae,
+    paired_bootstrap_wape_difference,
+    volume_ratio,
+    wape,
+)
 
 
 def test_mae_and_wape_on_known_values():
@@ -107,3 +114,43 @@ def test_flatten_scores_names_metrics_by_segment():
         "new_station_cohort_wape": 0.0,
         "new_station_cohort_volume_ratio": 1.0,
     }
+
+
+def make_days(n_days: int = 30, hours: int = 4) -> pd.Series:
+    """Hour starts of ``n_days`` days with ``hours`` rows each."""
+    days = pd.date_range("2026-08-01", periods=n_days, freq="D")
+    return pd.Series(np.repeat(days, hours) + pd.to_timedelta(np.tile(range(hours), n_days), "h"))
+
+
+def test_paired_bootstrap_of_identical_forecasts_is_zero():
+    days = make_days()
+    y_true = np.arange(len(days)) % 5
+    result = paired_bootstrap_wape_difference(days, y_true, y_true + 1.0, y_true + 1.0)
+    assert result["difference"] == 0
+    assert result["ci_low"] == result["ci_high"] == 0
+    assert result["share_a_better"] == 0  # never strictly better
+    assert result["days"] == 30
+
+
+def test_paired_bootstrap_detects_a_clearly_better_forecast():
+    # A misses by 1 on every row, B by 3: A is better on every resample
+    days = make_days()
+    y_true = np.full(len(days), 4.0)
+    result = paired_bootstrap_wape_difference(days, y_true, y_true + 1, y_true - 3)
+    assert result["difference"] == pytest.approx((1 - 3) / 4)
+    assert result["ci_high"] < 0
+    assert result["share_a_better"] == 1.0
+
+
+def test_paired_bootstrap_is_reproducible_with_the_seed():
+    rng = np.random.default_rng(1)
+    days = make_days()
+    y_true = rng.poisson(3, len(days))
+    a, b = rng.poisson(3, len(days)), rng.poisson(3, len(days))
+    first = paired_bootstrap_wape_difference(days, y_true, a, b, n_boot=200, seed=7)
+    assert first == paired_bootstrap_wape_difference(days, y_true, a, b, n_boot=200, seed=7)
+
+
+def test_paired_bootstrap_needs_one_day_per_row():
+    with pytest.raises(ValueError, match="days for"):
+        paired_bootstrap_wape_difference(make_days()[:5], [1] * 6, [1] * 6, [1] * 6)

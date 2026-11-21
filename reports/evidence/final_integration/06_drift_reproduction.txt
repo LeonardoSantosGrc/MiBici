@@ -1,0 +1,20 @@
+make drift on main 86b87d6 (DGX), 2026-11-21: exit 0, about 20 s
+Result: drift_by_feature.csv, performance_by_segment.csv, alerts.csv, calibration.csv and both figures identical to the committed files (git diff empty); only run_info.json differs (commit and git state of the run).
+
+Summary printed by make drift:
+2026-11-21 12:43:54.882 -06:00 | SUCCESS  | __main__:main:280 - Drift evidence in reports/evidence/final_drift:
+                scenario     level  max_alarm_psi  champion_wape  baseline_wape                                         action  matches_expected
+0                control      none         0.0000            NaN            NaN                                           none              True
+1                natural      none         0.0079         0.6066         0.6227                                           none              True
+2        S1_demand_shift      mild         0.0151         0.6114         0.6213                                           none             False
+3        S1_demand_shift  moderate         0.0182         0.6177         0.6193                                           none             False
+4        S1_demand_shift    strong         0.0313         0.6239         0.6187                       retrain with recent data              True
+5   S2_station_expansion      mild         0.0105         0.6125         0.6304                                           none             False
+6   S2_station_expansion  moderate         0.0325         0.6260         0.6478  review the model inputs (add weather, events)             False
+7   S2_station_expansion    strong         0.0927         0.6532         0.6829  review the model inputs (add weather, events)             False
+8        S3_data_failure      mild         0.0079         0.6066         0.6227                                           none             False
+9        S3_data_failure  moderate         0.0494         0.6069         0.6227                                           none             False
+10       S3_data_failure    strong         4.1659         0.6093         0.6227       investigate and confirm with performance             False
+11     S4_concept_change      mild         0.0079         0.6210         0.6579                                           none             False
+12     S4_concept_change  moderate         0.0079         0.6911         0.7788  review the model inputs (add weather, events)              True
+13     S4_concept_change    strong         0.0079         1.4665         1.7459  review the model inputs (add weather, events)              True

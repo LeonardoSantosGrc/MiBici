@@ -1,0 +1,10 @@
+Branch chore/final-integration (main 86b87d6 + integration changes), DGX, 2026-11-21
+
+make test (pytest -q):
+173 passed, 1 skipped in 18.82s
+
+make lint:
+All checks passed!
+31 files already formatted
+
+Live Docker test (tests/test_docker_integration.py) is skipped unless MIBICI_API_URL is set; it passed 4/4 against the image built from main and the published image (05_docker_checks.txt).
