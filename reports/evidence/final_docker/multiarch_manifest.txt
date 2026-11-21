@@ -1,0 +1,55 @@
+=== TAG 1.0.0 ===
+Name:      docker.io/joseemmanuelvg/mibici-api:1.0.0
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:65924163acf84ceb67fe651ec62867d00cb907ccf145e33f122cf2f684589e17
+
+Manifests:
+  Name:        docker.io/joseemmanuelvg/mibici-api:1.0.0@sha256:92df513ced01a8e320c13bb5484d6108ae404984fc171da1d00b4e2429d9361a
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:1.0.0@sha256:288a61407c3a32b0e5f08505f9fcccc173f3415e858971a39e818231e3ab3553
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:1.0.0@sha256:aac8abe943482c4c3bd3a9a8f88bebd4fca2f460c621572f086e9f1464bc903c
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:92df513ced01a8e320c13bb5484d6108ae404984fc171da1d00b4e2429d9361a
+    vnd.docker.reference.type:   attestation-manifest
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:1.0.0@sha256:9fb4f621c084404fa209222514f1586c9a82ea94118a9df93a6b3902036b6640
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.type:   attestation-manifest
+    vnd.docker.reference.digest: sha256:288a61407c3a32b0e5f08505f9fcccc173f3415e858971a39e818231e3ab3553
+
+=== TAG latest ===
+Name:      docker.io/joseemmanuelvg/mibici-api:latest
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:65924163acf84ceb67fe651ec62867d00cb907ccf145e33f122cf2f684589e17
+
+Manifests:
+  Name:        docker.io/joseemmanuelvg/mibici-api:latest@sha256:92df513ced01a8e320c13bb5484d6108ae404984fc171da1d00b4e2429d9361a
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:latest@sha256:288a61407c3a32b0e5f08505f9fcccc173f3415e858971a39e818231e3ab3553
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:latest@sha256:aac8abe943482c4c3bd3a9a8f88bebd4fca2f460c621572f086e9f1464bc903c
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:92df513ced01a8e320c13bb5484d6108ae404984fc171da1d00b4e2429d9361a
+    vnd.docker.reference.type:   attestation-manifest
+
+  Name:        docker.io/joseemmanuelvg/mibici-api:latest@sha256:9fb4f621c084404fa209222514f1586c9a82ea94118a9df93a6b3902036b6640
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:288a61407c3a32b0e5f08505f9fcccc173f3415e858971a39e818231e3ab3553
+    vnd.docker.reference.type:   attestation-manifest
