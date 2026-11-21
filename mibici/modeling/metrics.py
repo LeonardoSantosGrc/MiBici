@@ -15,7 +15,7 @@ far fewer bicycles than leave. It informs the final choice; it is not a candidat
 import numpy as np
 import pandas as pd
 
-from mibici.config import TARGET
+from mibici.config import RANDOM_STATE, TARGET
 
 
 def mae(y_true, y_pred) -> float:
@@ -86,6 +86,57 @@ def evaluate(rows: pd.DataFrame, y_pred) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(scores).set_index("segment")
+
+
+def paired_bootstrap_wape_difference(
+    days,
+    y_true,
+    pred_a,
+    pred_b,
+    n_boot: int = 2000,
+    seed: int = RANDOM_STATE,
+) -> dict[str, float]:
+    """How sure we can be that forecast A has a lower WAPE than forecast B on the same rows.
+
+    Whole days are resampled with replacement (the hours of a day share weather, events and
+    errors), and both forecasts are scored on the same resampled days, so a hard day counts
+    against both: the comparison is paired. Returns the observed difference WAPE(A) - WAPE(B),
+    its 95 % percentile interval and the share of resamples where A has the lower WAPE.
+    """
+    y_true, pred_a = _as_arrays(y_true, pred_a)
+    _, pred_b = _as_arrays(y_true, pred_b)
+    days = pd.to_datetime(np.asarray(days)).normalize()
+    if len(days) != len(y_true):
+        raise ValueError(f"Got {len(days)} days for {len(y_true)} rows.")
+
+    # Per day: absolute error of each forecast and observed departures
+    daily = (
+        pd.DataFrame(
+            {
+                "day": days,
+                "error_a": np.abs(y_true - pred_a),
+                "error_b": np.abs(y_true - pred_b),
+                "departures": y_true,
+            }
+        )
+        .groupby("day")[["error_a", "error_b", "departures"]]
+        .sum()
+        .to_numpy()
+    )
+    rng = np.random.default_rng(seed)
+    picks = rng.integers(0, len(daily), size=(n_boot, len(daily)))  # resampled day indices
+    sums = daily[picks].sum(axis=1)  # (n_boot, 3): errors of A and B, departures
+    differences = (sums[:, 0] - sums[:, 1]) / sums[:, 2]
+    observed = (daily[:, 0].sum() - daily[:, 1].sum()) / daily[:, 2].sum()
+    low, high = np.quantile(differences, [0.025, 0.975])
+    return {
+        "difference": float(observed),
+        "ci_low": float(low),
+        "ci_high": float(high),
+        "share_a_better": float((differences < 0).mean()),
+        "days": len(daily),
+        "n_boot": int(n_boot),
+    }
 
 
 def flatten_scores(scores: pd.DataFrame) -> dict[str, float]:
