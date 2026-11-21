@@ -1,0 +1,3 @@
+2026-11-21 01:49:06.847 | INFO     | mibici.config:<module>:12 - PROJ_ROOT path is: /home/jevg/MiBici
+Measured and verified: {'environment': 'local-image', 'machine': 'WSL2-PC', 'architecture': 'linux/amd64', 'total_2026_09_30': '11795.739', 'total_2026_10_01': '13307.735', 'max_abs_diff_vs_host': '0.000499'}
+Evidence: reports/evidence/final_docker/reproducibility.csv
